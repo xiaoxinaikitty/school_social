@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.RecommendationLogMapper">
+    <insert id="insert" parameterType="com.school.social.entity.RecommendationLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO recommendation_logs
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="userId != null">user_id,</if>
+        <if test="postId != null">post_id,</if>
+        <if test="scene != null">scene,</if>
+        <if test="score != null">score,</if>
+        <if test="rankPos != null">rank_pos,</if>
+        <if test="isClicked != null">is_clicked,</if>
+        <if test="createdAt != null">created_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+        <if test="userId != null">#{userId},</if>
+        <if test="postId != null">#{postId},</if>
+        <if test="scene != null">#{scene},</if>
+        <if test="score != null">#{score},</if>
+        <if test="rankPos != null">#{rankPos},</if>
+        <if test="isClicked != null">#{isClicked},</if>
+        <if test="createdAt != null">#{createdAt},</if>
+        </trim>
+    </insert>
+    <update id="updateById" parameterType="com.school.social.entity.RecommendationLog">
+        UPDATE recommendation_logs
+        <set>
+        <if test="userId != null">user_id = #{userId},</if>
+        <if test="postId != null">post_id = #{postId},</if>
+        <if test="scene != null">scene = #{scene},</if>
+        <if test="score != null">score = #{score},</if>
+        <if test="rankPos != null">rank_pos = #{rankPos},</if>
+        <if test="isClicked != null">is_clicked = #{isClicked},</if>
+        <if test="createdAt != null">created_at = #{createdAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM recommendation_logs WHERE id = #{id}
+    </delete>
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.RecommendationLog">
+        SELECT id, user_id, post_id, scene, score, rank_pos, is_clicked, created_at FROM recommendation_logs WHERE id = #{id}
+    </select>
+    <select id="selectAll" resultType="com.school.social.entity.RecommendationLog">
+        SELECT id, user_id, post_id, scene, score, rank_pos, is_clicked, created_at FROM recommendation_logs
+    </select>
+
+</mapper>

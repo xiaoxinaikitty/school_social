@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.BehaviorLogMapper">
+    <insert id="insert" parameterType="com.school.social.entity.BehaviorLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO behavior_logs
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="userId != null">user_id,</if>
+        <if test="actionType != null">action_type,</if>
+        <if test="targetType != null">target_type,</if>
+        <if test="targetId != null">target_id,</if>
+        <if test="durationSec != null">duration_sec,</if>
+        <if test="weight != null">weight,</if>
+        <if test="createdAt != null">created_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+        <if test="userId != null">#{userId},</if>
+        <if test="actionType != null">#{actionType},</if>
+        <if test="targetType != null">#{targetType},</if>
+        <if test="targetId != null">#{targetId},</if>
+        <if test="durationSec != null">#{durationSec},</if>
+        <if test="weight != null">#{weight},</if>
+        <if test="createdAt != null">#{createdAt},</if>
+        </trim>
+    </insert>
+    <update id="updateById" parameterType="com.school.social.entity.BehaviorLog">
+        UPDATE behavior_logs
+        <set>
+        <if test="userId != null">user_id = #{userId},</if>
+        <if test="actionType != null">action_type = #{actionType},</if>
+        <if test="targetType != null">target_type = #{targetType},</if>
+        <if test="targetId != null">target_id = #{targetId},</if>
+        <if test="durationSec != null">duration_sec = #{durationSec},</if>
+        <if test="weight != null">weight = #{weight},</if>
+        <if test="createdAt != null">created_at = #{createdAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM behavior_logs WHERE id = #{id}
+    </delete>
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.BehaviorLog">
+        SELECT id, user_id, action_type, target_type, target_id, duration_sec, weight, created_at FROM behavior_logs WHERE id = #{id}
+    </select>
+    <select id="selectAll" resultType="com.school.social.entity.BehaviorLog">
+        SELECT id, user_id, action_type, target_type, target_id, duration_sec, weight, created_at FROM behavior_logs
+    </select>
+
+</mapper>

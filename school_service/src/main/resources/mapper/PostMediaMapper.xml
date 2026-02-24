@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.PostMediaMapper">
+    <insert id="insert" parameterType="com.school.social.entity.PostMedia" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO post_media
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="postId != null">post_id,</if>
+        <if test="mediaType != null">media_type,</if>
+        <if test="url != null">url,</if>
+        <if test="sortOrder != null">sort_order,</if>
+        <if test="width != null">width,</if>
+        <if test="height != null">height,</if>
+        <if test="durationSec != null">duration_sec,</if>
+        <if test="createdAt != null">created_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+        <if test="postId != null">#{postId},</if>
+        <if test="mediaType != null">#{mediaType},</if>
+        <if test="url != null">#{url},</if>
+        <if test="sortOrder != null">#{sortOrder},</if>
+        <if test="width != null">#{width},</if>
+        <if test="height != null">#{height},</if>
+        <if test="durationSec != null">#{durationSec},</if>
+        <if test="createdAt != null">#{createdAt},</if>
+        </trim>
+    </insert>
+    <update id="updateById" parameterType="com.school.social.entity.PostMedia">
+        UPDATE post_media
+        <set>
+        <if test="postId != null">post_id = #{postId},</if>
+        <if test="mediaType != null">media_type = #{mediaType},</if>
+        <if test="url != null">url = #{url},</if>
+        <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+        <if test="width != null">width = #{width},</if>
+        <if test="height != null">height = #{height},</if>
+        <if test="durationSec != null">duration_sec = #{durationSec},</if>
+        <if test="createdAt != null">created_at = #{createdAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM post_media WHERE id = #{id}
+    </delete>
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.PostMedia">
+        SELECT id, post_id, media_type, url, sort_order, width, height, duration_sec, created_at FROM post_media WHERE id = #{id}
+    </select>
+    <select id="selectAll" resultType="com.school.social.entity.PostMedia">
+        SELECT id, post_id, media_type, url, sort_order, width, height, duration_sec, created_at FROM post_media
+    </select>
+
+</mapper>

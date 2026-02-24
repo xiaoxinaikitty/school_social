@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.FollowMapper">
+    <insert id="insert" parameterType="com.school.social.entity.Follow" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO follows
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="followerId != null">follower_id,</if>
+        <if test="followeeId != null">followee_id,</if>
+        <if test="createdAt != null">created_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+        <if test="followerId != null">#{followerId},</if>
+        <if test="followeeId != null">#{followeeId},</if>
+        <if test="createdAt != null">#{createdAt},</if>
+        </trim>
+    </insert>
+    <update id="updateById" parameterType="com.school.social.entity.Follow">
+        UPDATE follows
+        <set>
+        <if test="followerId != null">follower_id = #{followerId},</if>
+        <if test="followeeId != null">followee_id = #{followeeId},</if>
+        <if test="createdAt != null">created_at = #{createdAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM follows WHERE id = #{id}
+    </delete>
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.Follow">
+        SELECT id, follower_id, followee_id, created_at FROM follows WHERE id = #{id}
+    </select>
+    <select id="selectAll" resultType="com.school.social.entity.Follow">
+        SELECT id, follower_id, followee_id, created_at FROM follows
+    </select>
+
+</mapper>

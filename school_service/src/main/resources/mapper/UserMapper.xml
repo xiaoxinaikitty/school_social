@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.UserMapper">
+    <insert id="insert" parameterType="com.school.social.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="username != null">username,</if>
+        <if test="passwordHash != null">password_hash,</if>
+        <if test="email != null">email,</if>
+        <if test="phone != null">phone,</if>
+        <if test="avatarUrl != null">avatar_url,</if>
+        <if test="gender != null">gender,</if>
+        <if test="birthday != null">birthday,</if>
+        <if test="school != null">school,</if>
+        <if test="college != null">college,</if>
+        <if test="grade != null">grade,</if>
+        <if test="bio != null">bio,</if>
+        <if test="status != null">status,</if>
+        <if test="registerIp != null">register_ip,</if>
+        <if test="lastLoginAt != null">last_login_at,</if>
+        <if test="createdAt != null">created_at,</if>
+        <if test="updatedAt != null">updated_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+        <if test="username != null">#{username},</if>
+        <if test="passwordHash != null">#{passwordHash},</if>
+        <if test="email != null">#{email},</if>
+        <if test="phone != null">#{phone},</if>
+        <if test="avatarUrl != null">#{avatarUrl},</if>
+        <if test="gender != null">#{gender},</if>
+        <if test="birthday != null">#{birthday},</if>
+        <if test="school != null">#{school},</if>
+        <if test="college != null">#{college},</if>
+        <if test="grade != null">#{grade},</if>
+        <if test="bio != null">#{bio},</if>
+        <if test="status != null">#{status},</if>
+        <if test="registerIp != null">#{registerIp},</if>
+        <if test="lastLoginAt != null">#{lastLoginAt},</if>
+        <if test="createdAt != null">#{createdAt},</if>
+        <if test="updatedAt != null">#{updatedAt},</if>
+        </trim>
+    </insert>
+    <update id="updateById" parameterType="com.school.social.entity.User">
+        UPDATE users
+        <set>
+        <if test="username != null">username = #{username},</if>
+        <if test="passwordHash != null">password_hash = #{passwordHash},</if>
+        <if test="email != null">email = #{email},</if>
+        <if test="phone != null">phone = #{phone},</if>
+        <if test="avatarUrl != null">avatar_url = #{avatarUrl},</if>
+        <if test="gender != null">gender = #{gender},</if>
+        <if test="birthday != null">birthday = #{birthday},</if>
+        <if test="school != null">school = #{school},</if>
+        <if test="college != null">college = #{college},</if>
+        <if test="grade != null">grade = #{grade},</if>
+        <if test="bio != null">bio = #{bio},</if>
+        <if test="status != null">status = #{status},</if>
+        <if test="registerIp != null">register_ip = #{registerIp},</if>
+        <if test="lastLoginAt != null">last_login_at = #{lastLoginAt},</if>
+        <if test="createdAt != null">created_at = #{createdAt},</if>
+        <if test="updatedAt != null">updated_at = #{updatedAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM users WHERE id = #{id}
+    </delete>
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.User">
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at FROM users WHERE id = #{id}
+    </select>
+    <select id="selectAll" resultType="com.school.social.entity.User">
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at FROM users
+    </select>
+    <select id="selectByUsername" resultType="com.school.social.entity.User">
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at
+        FROM users
+        WHERE username = #{username}
+        LIMIT 1
+    </select>
+    <select id="selectByEmail" resultType="com.school.social.entity.User">
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at
+        FROM users
+        WHERE email = #{email}
+        LIMIT 1
+    </select>
+    <select id="selectByPhone" resultType="com.school.social.entity.User">
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at
+        FROM users
+        WHERE phone = #{phone}
+        LIMIT 1
+    </select>
+    <update id="updateLastLoginAt">
+        UPDATE users
+        SET last_login_at = #{lastLoginAt}
+        WHERE id = #{id}
+    </update>
+
+</mapper>
