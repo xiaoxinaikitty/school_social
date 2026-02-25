@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.UserTagMapper">
+    <insert id="insert" parameterType="com.school.social.entity.UserTag">
+        INSERT INTO user_tags
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="userId != null">user_id,</if>
+        <if test="tagId != null">tag_id,</if>
+        <if test="weight != null">weight,</if>
+        <if test="updatedAt != null">updated_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+        <if test="userId != null">#{userId},</if>
+        <if test="tagId != null">#{tagId},</if>
+        <if test="weight != null">#{weight},</if>
+        <if test="updatedAt != null">#{updatedAt},</if>
+        </trim>
+    </insert>
+    <delete id="deleteByPk">
+        DELETE FROM user_tags WHERE user_id = #{userId} AND tag_id = #{tagId}
+    </delete>
+    <select id="selectByPk" resultType="com.school.social.entity.UserTag">
+        SELECT user_id, tag_id, weight, updated_at FROM user_tags WHERE user_id = #{userId} AND tag_id = #{tagId}
+    </select>
+    <select id="selectAll" resultType="com.school.social.entity.UserTag">
+        SELECT user_id, tag_id, weight, updated_at FROM user_tags
+    </select>
+
+</mapper>

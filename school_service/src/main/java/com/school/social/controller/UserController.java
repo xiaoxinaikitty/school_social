@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(\"/api/u-se-rs\")
+@RequestMapping("/api/u-se-rs")
 public class UserController {
 }
+

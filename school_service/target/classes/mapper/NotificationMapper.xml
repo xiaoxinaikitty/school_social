@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.NotificationMapper">
+    <insert id="insert" parameterType="com.school.social.entity.Notification" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notifications
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="userId != null">user_id,</if>
+        <if test="type != null">type,</if>
+        <if test="title != null">title,</if>
+        <if test="content != null">content,</if>
+        <if test="refType != null">ref_type,</if>
+        <if test="refId != null">ref_id,</if>
+        <if test="isRead != null">is_read,</if>
+        <if test="createdAt != null">created_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+        <if test="userId != null">#{userId},</if>
+        <if test="type != null">#{type},</if>
+        <if test="title != null">#{title},</if>
+        <if test="content != null">#{content},</if>
+        <if test="refType != null">#{refType},</if>
+        <if test="refId != null">#{refId},</if>
+        <if test="isRead != null">#{isRead},</if>
+        <if test="createdAt != null">#{createdAt},</if>
+        </trim>
+    </insert>
+    <update id="updateById" parameterType="com.school.social.entity.Notification">
+        UPDATE notifications
+        <set>
+        <if test="userId != null">user_id = #{userId},</if>
+        <if test="type != null">type = #{type},</if>
+        <if test="title != null">title = #{title},</if>
+        <if test="content != null">content = #{content},</if>
+        <if test="refType != null">ref_type = #{refType},</if>
+        <if test="refId != null">ref_id = #{refId},</if>
+        <if test="isRead != null">is_read = #{isRead},</if>
+        <if test="createdAt != null">created_at = #{createdAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM notifications WHERE id = #{id}
+    </delete>
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.Notification">
+        SELECT id, user_id, type, title, content, ref_type, ref_id, is_read, created_at FROM notifications WHERE id = #{id}
+    </select>
+    <select id="selectAll" resultType="com.school.social.entity.Notification">
+        SELECT id, user_id, type, title, content, ref_type, ref_id, is_read, created_at FROM notifications
+    </select>
+
+</mapper>

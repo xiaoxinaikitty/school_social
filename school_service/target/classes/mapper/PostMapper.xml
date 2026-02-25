@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.PostMapper">
+    <insert id="insert" parameterType="com.school.social.entity.Post" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO posts
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+        <if test="userId != null">user_id,</if>
+        <if test="title != null">title,</if>
+        <if test="content != null">content,</if>
+        <if test="postType != null">post_type,</if>
+        <if test="status != null">status,</if>
+        <if test="visibility != null">visibility,</if>
+        <if test="location != null">location,</if>
+        <if test="college != null">college,</if>
+        <if test="likeCount != null">like_count,</if>
+        <if test="commentCount != null">comment_count,</if>
+        <if test="favoriteCount != null">favorite_count,</if>
+        <if test="viewCount != null">view_count,</if>
+        <if test="qualityScore != null">quality_score,</if>
+        <if test="isPinned != null">is_pinned,</if>
+        <if test="isFeatured != null">is_featured,</if>
+        <if test="createdAt != null">created_at,</if>
+        <if test="updatedAt != null">updated_at,</if>
+        <if test="publishedAt != null">published_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+        <if test="userId != null">#{userId},</if>
+        <if test="title != null">#{title},</if>
+        <if test="content != null">#{content},</if>
+        <if test="postType != null">#{postType},</if>
+        <if test="status != null">#{status},</if>
+        <if test="visibility != null">#{visibility},</if>
+        <if test="location != null">#{location},</if>
+        <if test="college != null">#{college},</if>
+        <if test="likeCount != null">#{likeCount},</if>
+        <if test="commentCount != null">#{commentCount},</if>
+        <if test="favoriteCount != null">#{favoriteCount},</if>
+        <if test="viewCount != null">#{viewCount},</if>
+        <if test="qualityScore != null">#{qualityScore},</if>
+        <if test="isPinned != null">#{isPinned},</if>
+        <if test="isFeatured != null">#{isFeatured},</if>
+        <if test="createdAt != null">#{createdAt},</if>
+        <if test="updatedAt != null">#{updatedAt},</if>
+        <if test="publishedAt != null">#{publishedAt},</if>
+        </trim>
+    </insert>
+    <update id="updateById" parameterType="com.school.social.entity.Post">
+        UPDATE posts
+        <set>
+        <if test="userId != null">user_id = #{userId},</if>
+        <if test="title != null">title = #{title},</if>
+        <if test="content != null">content = #{content},</if>
+        <if test="postType != null">post_type = #{postType},</if>
+        <if test="status != null">status = #{status},</if>
+        <if test="visibility != null">visibility = #{visibility},</if>
+        <if test="location != null">location = #{location},</if>
+        <if test="college != null">college = #{college},</if>
+        <if test="likeCount != null">like_count = #{likeCount},</if>
+        <if test="commentCount != null">comment_count = #{commentCount},</if>
+        <if test="favoriteCount != null">favorite_count = #{favoriteCount},</if>
+        <if test="viewCount != null">view_count = #{viewCount},</if>
+        <if test="qualityScore != null">quality_score = #{qualityScore},</if>
+        <if test="isPinned != null">is_pinned = #{isPinned},</if>
+        <if test="isFeatured != null">is_featured = #{isFeatured},</if>
+        <if test="createdAt != null">created_at = #{createdAt},</if>
+        <if test="updatedAt != null">updated_at = #{updatedAt},</if>
+        <if test="publishedAt != null">published_at = #{publishedAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM posts WHERE id = #{id}
+    </delete>
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.Post">
+        SELECT id, user_id, title, content, post_type, status, visibility, location, college, like_count, comment_count, favorite_count, view_count, quality_score, is_pinned, is_featured, created_at, updated_at, published_at FROM posts WHERE id = #{id}
+    </select>
+    <select id="selectAll" resultType="com.school.social.entity.Post">
+        SELECT id, user_id, title, content, post_type, status, visibility, location, college, like_count, comment_count, favorite_count, view_count, quality_score, is_pinned, is_featured, created_at, updated_at, published_at FROM posts
+    </select>
+
+</mapper>
