@@ -114,4 +114,146 @@
         </where>
     </select>
 
+    <select id="selectRecommendPaged" resultType="com.school.social.entity.Post">
+        SELECT id, user_id, title, content, post_type, status, visibility, location, college,
+               like_count, comment_count, favorite_count, view_count, quality_score,
+               is_pinned, is_featured, created_at, updated_at, published_at
+        FROM posts
+        WHERE status IN (0, 1)
+        ORDER BY IFNULL(is_pinned, 0) DESC,
+                 IFNULL(is_featured, 0) DESC,
+                 IFNULL(quality_score, 0) DESC,
+                 created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countRecommend" resultType="int">
+        SELECT COUNT(1) FROM posts WHERE status IN (0, 1)
+    </select>
+
+    <select id="selectLatestPaged" resultType="com.school.social.entity.Post">
+        SELECT id, user_id, title, content, post_type, status, visibility, location, college,
+               like_count, comment_count, favorite_count, view_count, quality_score,
+               is_pinned, is_featured, created_at, updated_at, published_at
+        FROM posts
+        WHERE status IN (0, 1)
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countLatest" resultType="int">
+        SELECT COUNT(1) FROM posts WHERE status IN (0, 1)
+    </select>
+
+    <select id="selectHotPaged" resultType="com.school.social.entity.Post">
+        SELECT id, user_id, title, content, post_type, status, visibility, location, college,
+               like_count, comment_count, favorite_count, view_count, quality_score,
+               is_pinned, is_featured, created_at, updated_at, published_at
+        FROM posts
+        WHERE status IN (0, 1)
+        ORDER BY (IFNULL(like_count, 0) + IFNULL(comment_count, 0) +
+                  IFNULL(favorite_count, 0) + IFNULL(view_count, 0)) DESC,
+                 created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countHot" resultType="int">
+        SELECT COUNT(1) FROM posts WHERE status IN (0, 1)
+    </select>
+
+    <select id="selectByTagPaged" resultType="com.school.social.entity.Post">
+        SELECT p.id, p.user_id, p.title, p.content, p.post_type, p.status, p.visibility,
+               p.location, p.college, p.like_count, p.comment_count, p.favorite_count,
+               p.view_count, p.quality_score, p.is_pinned, p.is_featured,
+               p.created_at, p.updated_at, p.published_at
+        FROM posts p
+        INNER JOIN post_tags pt ON p.id = pt.post_id
+        WHERE pt.tag_id = #{tagId}
+          AND p.status IN (0, 1)
+        ORDER BY p.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countByTag" resultType="int">
+        SELECT COUNT(1)
+        FROM posts p
+        INNER JOIN post_tags pt ON p.id = pt.post_id
+        WHERE pt.tag_id = #{tagId}
+          AND p.status IN (0, 1)
+    </select>
+
+    <select id="selectByFolloweePaged" resultType="com.school.social.entity.Post">
+        SELECT p.id, p.user_id, p.title, p.content, p.post_type, p.status, p.visibility,
+               p.location, p.college, p.like_count, p.comment_count, p.favorite_count,
+               p.view_count, p.quality_score, p.is_pinned, p.is_featured,
+               p.created_at, p.updated_at, p.published_at
+        FROM posts p
+        INNER JOIN follows f ON f.followee_id = p.user_id
+        WHERE f.follower_id = #{userId}
+          AND p.status IN (0, 1)
+        ORDER BY p.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countByFollowee" resultType="int">
+        SELECT COUNT(1)
+        FROM posts p
+        INNER JOIN follows f ON f.followee_id = p.user_id
+        WHERE f.follower_id = #{userId}
+          AND p.status IN (0, 1)
+    </select>
+
+    <select id="searchPaged" resultType="com.school.social.entity.Post">
+        SELECT DISTINCT p.id, p.user_id, p.title, p.content, p.post_type, p.status, p.visibility,
+               p.location, p.college, p.like_count, p.comment_count, p.favorite_count,
+               p.view_count, p.quality_score, p.is_pinned, p.is_featured,
+               p.created_at, p.updated_at, p.published_at
+        FROM posts p
+        <if test="tagId != null">
+            INNER JOIN post_tags pt ON p.id = pt.post_id
+        </if>
+        <where>
+            p.status IN (0, 1)
+            <if test="keyword != null and keyword != ''">
+                AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+                OR p.content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="tagId != null">
+                AND pt.tag_id = #{tagId}
+            </if>
+        </where>
+        ORDER BY p.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countSearch" resultType="int">
+        SELECT COUNT(DISTINCT p.id)
+        FROM posts p
+        <if test="tagId != null">
+            INNER JOIN post_tags pt ON p.id = pt.post_id
+        </if>
+        <where>
+            p.status IN (0, 1)
+            <if test="keyword != null and keyword != ''">
+                AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+                OR p.content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="tagId != null">
+                AND pt.tag_id = #{tagId}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectRelatedByTagIds" resultType="com.school.social.entity.Post">
+        SELECT p.id, p.user_id, p.title, p.content, p.post_type, p.status, p.visibility,
+               p.location, p.college, p.like_count, p.comment_count, p.favorite_count,
+               p.view_count, p.quality_score, p.is_pinned, p.is_featured,
+               p.created_at, p.updated_at, p.published_at
+        FROM posts p
+        INNER JOIN post_tags pt ON p.id = pt.post_id
+        WHERE pt.tag_id IN
+        <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">
+            #{tagId}
+        </foreach>
+          AND p.id != #{excludeId}
+          AND p.status IN (0, 1)
+        GROUP BY p.id
+        ORDER BY COUNT(1) DESC, p.created_at DESC
+        LIMIT #{limit}
+    </select>
+
 </mapper>

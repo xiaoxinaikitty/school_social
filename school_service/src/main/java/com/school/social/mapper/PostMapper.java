@@ -26,4 +26,43 @@ public interface PostMapper {
                            @Param("size") int size);
 
     int countByStatus(@Param("status") Integer status);
+
+    List<Post> selectRecommendPaged(@Param("offset") int offset,
+                                    @Param("size") int size);
+
+    int countRecommend();
+
+    List<Post> selectLatestPaged(@Param("offset") int offset,
+                                 @Param("size") int size);
+
+    int countLatest();
+
+    List<Post> selectHotPaged(@Param("offset") int offset,
+                              @Param("size") int size);
+
+    int countHot();
+
+    List<Post> selectByTagPaged(@Param("tagId") Long tagId,
+                                @Param("offset") int offset,
+                                @Param("size") int size);
+
+    int countByTag(@Param("tagId") Long tagId);
+
+    List<Post> selectByFolloweePaged(@Param("userId") Long userId,
+                                     @Param("offset") int offset,
+                                     @Param("size") int size);
+
+    int countByFollowee(@Param("userId") Long userId);
+
+    List<Post> searchPaged(@Param("keyword") String keyword,
+                           @Param("tagId") Long tagId,
+                           @Param("offset") int offset,
+                           @Param("size") int size);
+
+    int countSearch(@Param("keyword") String keyword,
+                    @Param("tagId") Long tagId);
+
+    List<Post> selectRelatedByTagIds(@Param("tagIds") List<Long> tagIds,
+                                     @Param("excludeId") Long excludeId,
+                                     @Param("limit") int limit);
 }

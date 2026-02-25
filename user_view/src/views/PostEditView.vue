@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { apiFetch } from '../utils/api'
+import { apiFetch, apiUpload } from '../utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,17 +18,13 @@ const college = ref('')
 const isDraft = ref(false)
 
 const mediaInputs = ref([])
-const availableTags = ref([
-  { id: 1, name: '学习' },
-  { id: 2, name: '社团' },
-  { id: 3, name: '校园活动' },
-  { id: 4, name: '二手交易' },
-  { id: 5, name: '竞赛' },
-  { id: 6, name: '求职实习' },
-  { id: 7, name: '生活' },
-  { id: 8, name: '兴趣' },
-])
+const uploading = ref(false)
+const uploadError = ref('')
+const fileInputRef = ref(null)
+const availableTags = ref([])
 const selectedTagIds = ref([])
+const loadingTags = ref(false)
+const tagsError = ref('')
 
 const loadDetail = async () => {
   loading.value = true
@@ -51,7 +47,7 @@ const loadDetail = async () => {
     visibility.value = detail.visibility ?? 0
     location.value = detail.location || ''
     college.value = detail.college || ''
-    isDraft.value = detail.status === 1
+    isDraft.value = detail.status === 3
     selectedTagIds.value = detail.tagIds || []
     mediaInputs.value = (detail.media || []).map((media, idx) => ({
       url: media.url,
@@ -68,19 +64,78 @@ const loadDetail = async () => {
   }
 }
 
-const addMedia = () => {
-  mediaInputs.value.push({
-    url: '',
-    mediaType: 0,
-    sortOrder: mediaInputs.value.length + 1,
-  })
-}
-
 const removeMedia = (index) => {
   mediaInputs.value.splice(index, 1)
   mediaInputs.value.forEach((item, idx) => {
     item.sortOrder = idx + 1
   })
+}
+
+const triggerUpload = () => {
+  uploadError.value = ''
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  }
+}
+
+const handleFiles = async (event) => {
+  const files = Array.from(event.target.files || [])
+  if (!files.length) return
+  uploading.value = true
+  uploadError.value = ''
+  try {
+    for (const file of files) {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await apiUpload('/api/upload', formData)
+      if (res.status === 401) {
+        router.push('/login')
+        return
+      }
+      const data = await res.json()
+      if (!res.ok || data.code !== 0) {
+        uploadError.value = data.message || '上传失败。'
+        return
+      }
+      const url = data.data?.url
+      if (url) {
+        mediaInputs.value.push({
+          url,
+          mediaType: file.type.startsWith('video/') ? 1 : 0,
+          sortOrder: mediaInputs.value.length + 1,
+        })
+      }
+    }
+  } catch (err) {
+    uploadError.value = '网络错误，上传失败。'
+  } finally {
+    uploading.value = false
+    if (event.target) {
+      event.target.value = ''
+    }
+  }
+}
+
+const loadAvailableTags = async () => {
+  loadingTags.value = true
+  tagsError.value = ''
+  try {
+    const res = await apiFetch('/api/tags')
+    if (res.status === 401) {
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      tagsError.value = data.message || '获取标签列表失败。'
+      return
+    }
+    availableTags.value = data.data || []
+  } catch (err) {
+    tagsError.value = '网络错误，无法获取标签列表。'
+  } finally {
+    loadingTags.value = false
+  }
 }
 
 const submit = async () => {
@@ -136,7 +191,10 @@ const submit = async () => {
   }
 }
 
-onMounted(loadDetail)
+onMounted(() => {
+  loadAvailableTags()
+  loadDetail()
+})
 </script>
 
 <template>
@@ -226,30 +284,39 @@ onMounted(loadDetail)
             {{ tag.name }}
           </label>
         </div>
+        <div v-if="loadingTags" class="feed-empty">标签加载中...</div>
+        <div v-else-if="!availableTags.length" class="feed-empty">标签库为空，请先配置标签。</div>
+        <p v-if="tagsError" class="form-alert error">{{ tagsError }}</p>
 
         <div class="profile-header">
           <div>
-            <h2>媒体链接</h2>
-            <p>可填写图片或视频链接。</p>
+            <h2>媒体上传</h2>
+            <p>从电脑选择图片或视频上传。</p>
           </div>
-          <button class="ghost-btn" type="button" @click="addMedia">添加一条</button>
+          <button class="ghost-btn" type="button" @click="triggerUpload" :disabled="uploading">
+            {{ uploading ? '上传中...' : '选择文件' }}
+          </button>
         </div>
-        <div class="media-list">
+        <input
+          ref="fileInputRef"
+          class="file-input"
+          type="file"
+          multiple
+          accept="image/*,video/*"
+          @change="handleFiles"
+        />
+        <p v-if="uploadError" class="form-alert error">{{ uploadError }}</p>
+        <div class="media-list" v-if="mediaInputs.length">
           <div v-for="(item, index) in mediaInputs" :key="index" class="media-row">
-            <label class="field">
-              <span>链接</span>
-              <input v-model="item.url" type="text" placeholder="https://..." />
-            </label>
-            <label class="field">
-              <span>类型</span>
-              <select v-model="item.mediaType">
-                <option value="0">图片</option>
-                <option value="1">视频</option>
-              </select>
-            </label>
-            <button class="ghost-btn" type="button" @click="removeMedia(index)" v-if="mediaInputs.length > 1">
-              删除
-            </button>
+            <div class="media-preview-card">
+              <img v-if="item.mediaType === 0" :src="item.url" alt="media" />
+              <a v-else :href="item.url" target="_blank" rel="noreferrer">查看视频</a>
+            </div>
+            <div class="media-meta">
+              <span>类型：{{ item.mediaType === 0 ? '图片' : '视频' }}</span>
+              <span class="muted">{{ item.url }}</span>
+            </div>
+            <button class="ghost-btn danger" type="button" @click="removeMedia(index)">删除</button>
           </div>
         </div>
 

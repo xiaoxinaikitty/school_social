@@ -14,3 +14,19 @@ export const apiFetch = (path, options = {}) => {
     headers,
   })
 }
+
+export const apiUpload = (path, formData, options = {}) => {
+  const token = localStorage.getItem('auth_token')
+  const headers = {
+    ...(options.headers || {}),
+  }
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+  return fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    body: formData,
+    ...options,
+    headers,
+  })
+}

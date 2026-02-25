@@ -252,7 +252,7 @@
   ]
 }
 ```
-- **状态约定**: `status=0` 已发布，`status=1` 草稿
+- **状态约定**: `status=0` 待审，`status=1` 通过，`status=2` 驳回，`status=3` 草稿
 
 ### 4.2 编辑内容
 - **URL**: `PUT /api/posts/{id}`
@@ -276,4 +276,89 @@
 - **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
 - **参数**: `page`（默认 1），`size`（默认 10，最大 50），`status`（可选）
 - **响应**: `PageResponse<Post>`
+
+### 4.6 媒体上传
+- **URL**: `POST /api/upload`
+- **说明**: 上传图片/视频文件，返回可访问 URL
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **请求体**: `multipart/form-data`，字段名 `file`
+- **响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "url": "/uploads/20260225153000_xxx.png",
+    "name": "original.png",
+    "size": 123456
+  }
+}
+```
+
+## 5. 内容浏览与发现
+
+### 5.1 推荐流（首页）
+- **URL**: `GET /api/posts/recommend`
+- **说明**: 获取推荐内容列表（按置顶/精选/质量分/时间排序）
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **分页参数**: `page`（默认 1），`size`（默认 10，最大 50）
+- **响应**: `PageResponse<Post>`
+
+### 5.2 关注流（仅关注用户）
+- **URL**: `GET /api/posts/follow`
+- **说明**: 获取关注用户的内容列表
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **分页参数**: `page`（默认 1），`size`（默认 10，最大 50）
+- **响应**: `PageResponse<Post>`
+
+### 5.3 最新内容
+- **URL**: `GET /api/posts/latest`
+- **说明**: 获取最新内容列表（按发布时间倒序）
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **分页参数**: `page`（默认 1），`size`（默认 10，最大 50）
+- **响应**: `PageResponse<Post>`
+
+### 5.4 热门内容
+- **URL**: `GET /api/posts/hot`
+- **说明**: 获取热门内容列表（按互动热度排序）
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **分页参数**: `page`（默认 1），`size`（默认 10，最大 50）
+- **响应**: `PageResponse<Post>`
+
+### 5.5 话题列表（标签）
+- **URL**: `GET /api/tags`
+- **说明**: 获取话题/标签列表，可按类型/状态过滤
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `type`（可选），`status`（可选）
+- **响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    { "id": 1, "name": "学习", "type": 0, "status": 1, "createdAt": "2026-02-24T10:00:00" }
+  ]
+}
+```
+
+### 5.6 话题内容列表
+- **URL**: `GET /api/posts/topic`
+- **说明**: 按标签获取内容列表
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `tagId`（必填），`page`（默认 1），`size`（默认 10，最大 50）
+- **响应**: `PageResponse<Post>`
+
+### 5.7 搜索（关键词与标签）
+- **URL**: `GET /api/posts/search`
+- **说明**: 按关键词（标题/正文）与标签搜索内容
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `keyword`（可选），`tagId`（可选），`page`（默认 1），`size`（默认 10，最大 50）
+- **响应**: `PageResponse<Post>`
+
+### 5.8 相关推荐
+- **URL**: `GET /api/posts/{id}/related`
+- **说明**: 获取与当前内容相同标签的相关推荐
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `limit`（默认 6，最大 20）
+- **响应**: `List<Post>`
 

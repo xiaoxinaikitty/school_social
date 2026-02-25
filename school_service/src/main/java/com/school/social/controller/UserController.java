@@ -15,6 +15,7 @@ import com.school.social.mapper.UserTagMapper;
 import com.school.social.mapper.PostMapper;
 import com.school.social.mapper.FavoriteMapper;
 import com.school.social.mapper.CommentMapper;
+import com.school.social.mapper.TagMapper;
 import com.school.social.service.UserService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,9 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/users")
@@ -46,6 +49,9 @@ public class UserController {
 
     @Resource
     private CommentMapper commentMapper;
+
+    @Resource
+    private TagMapper tagMapper;
 
     @GetMapping("/{id}")
     public ApiResponse<UserProfileResponse> getProfile(@PathVariable Long id, HttpServletRequest request) {
@@ -118,16 +124,20 @@ public class UserController {
             return ApiResponse.fail("无权限访问");
         }
         userTagMapper.deleteByUserId(id);
-        if (request != null && request.getTagIds() != null) {
-            for (Long tagId : request.getTagIds()) {
-                if (tagId == null) {
-                    continue;
+        if (request != null && request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            List<Long> existingIds = tagMapper.selectExistingIds(request.getTagIds());
+            if (existingIds != null && !existingIds.isEmpty()) {
+                Set<Long> idSet = new HashSet<>(existingIds);
+                for (Long tagId : request.getTagIds()) {
+                    if (tagId == null || !idSet.contains(tagId)) {
+                        continue;
+                    }
+                    UserTag userTag = new UserTag();
+                    userTag.setUserId(id);
+                    userTag.setTagId(tagId);
+                    userTag.setWeight(new BigDecimal("1.00"));
+                    userTagMapper.insert(userTag);
                 }
-                UserTag userTag = new UserTag();
-                userTag.setUserId(id);
-                userTag.setTagId(tagId);
-                userTag.setWeight(new BigDecimal("1.00"));
-                userTagMapper.insert(userTag);
             }
         }
         return ApiResponse.success(userTagMapper.selectByUserId(id));
@@ -206,4 +216,3 @@ public class UserController {
         return tokenUserId != null && tokenUserId.equals(id);
     }
 }
-

@@ -28,16 +28,7 @@ const savingProfile = ref(false)
 const profileError = ref('')
 const profileSuccess = ref('')
 
-const availableTags = ref([
-  { id: 1, name: '学习' },
-  { id: 2, name: '社团' },
-  { id: 3, name: '校园活动' },
-  { id: 4, name: '二手交易' },
-  { id: 5, name: '竞赛' },
-  { id: 6, name: '求职实习' },
-  { id: 7, name: '生活' },
-  { id: 8, name: '兴趣' },
-])
+const availableTags = ref([])
 const selectedTagIds = ref([])
 const loadingTags = ref(false)
 const tagsError = ref('')
@@ -183,6 +174,29 @@ const loadUserTags = async () => {
     selectedTagIds.value = (data.data || []).map((item) => item.tagId)
   } catch (err) {
     tagsError.value = '网络错误，无法获取标签。'
+  } finally {
+    loadingTags.value = false
+  }
+}
+
+const loadAvailableTags = async () => {
+  loadingTags.value = true
+  tagsError.value = ''
+  try {
+    const res = await apiFetch('/api/tags')
+    if (res.status === 401) {
+      tagsError.value = '登录已过期，请重新登录。'
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      tagsError.value = data.message || '获取标签列表失败。'
+      return
+    }
+    availableTags.value = data.data || []
+  } catch (err) {
+    tagsError.value = '网络错误，无法获取标签列表。'
   } finally {
     loadingTags.value = false
   }
@@ -336,6 +350,7 @@ onMounted(() => {
     user.value = null
   }
   loadProfile()
+  loadAvailableTags()
   loadUserTags()
   loadPosts()
 })
@@ -477,6 +492,9 @@ onMounted(() => {
           />
           {{ tag.name }}
         </label>
+      </div>
+      <div v-if="!loadingTags && availableTags.length === 0 && !tagsError" class="feed-empty">
+        标签库为空，请先在后端配置 tags 数据。
       </div>
       <p v-if="tagsError" class="form-alert error">{{ tagsError }}</p>
     </section>

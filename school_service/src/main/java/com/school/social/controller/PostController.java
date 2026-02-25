@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -153,12 +154,101 @@ public class PostController {
     public ApiResponse<PageResponse<Post>> list(@RequestParam(defaultValue = "1") int page,
                                                 @RequestParam(defaultValue = "10") int size,
                                                 @RequestParam(required = false) Integer status) {
-        int safePage = Math.max(page, 1);
-        int safeSize = Math.min(Math.max(size, 1), 50);
+        int safePage = clampPage(page);
+        int safeSize = clampSize(size);
         int offset = (safePage - 1) * safeSize;
         List<Post> list = postMapper.selectPaged(status, offset, safeSize);
         long total = postMapper.countByStatus(status);
         return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
+    }
+
+    @GetMapping("/recommend")
+    public ApiResponse<PageResponse<Post>> recommend(@RequestParam(defaultValue = "1") int page,
+                                                     @RequestParam(defaultValue = "10") int size) {
+        int safePage = clampPage(page);
+        int safeSize = clampSize(size);
+        int offset = (safePage - 1) * safeSize;
+        List<Post> list = postMapper.selectRecommendPaged(offset, safeSize);
+        long total = postMapper.countRecommend();
+        return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
+    }
+
+    @GetMapping("/latest")
+    public ApiResponse<PageResponse<Post>> latest(@RequestParam(defaultValue = "1") int page,
+                                                  @RequestParam(defaultValue = "10") int size) {
+        int safePage = clampPage(page);
+        int safeSize = clampSize(size);
+        int offset = (safePage - 1) * safeSize;
+        List<Post> list = postMapper.selectLatestPaged(offset, safeSize);
+        long total = postMapper.countLatest();
+        return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
+    }
+
+    @GetMapping("/hot")
+    public ApiResponse<PageResponse<Post>> hot(@RequestParam(defaultValue = "1") int page,
+                                               @RequestParam(defaultValue = "10") int size) {
+        int safePage = clampPage(page);
+        int safeSize = clampSize(size);
+        int offset = (safePage - 1) * safeSize;
+        List<Post> list = postMapper.selectHotPaged(offset, safeSize);
+        long total = postMapper.countHot();
+        return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
+    }
+
+    @GetMapping("/follow")
+    public ApiResponse<PageResponse<Post>> follow(@RequestParam(defaultValue = "1") int page,
+                                                  @RequestParam(defaultValue = "10") int size,
+                                                  HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ApiResponse.fail("未登录或登录已过期");
+        }
+        int safePage = clampPage(page);
+        int safeSize = clampSize(size);
+        int offset = (safePage - 1) * safeSize;
+        List<Post> list = postMapper.selectByFolloweePaged(userId, offset, safeSize);
+        long total = postMapper.countByFollowee(userId);
+        return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
+    }
+
+    @GetMapping("/topic")
+    public ApiResponse<PageResponse<Post>> topic(@RequestParam Long tagId,
+                                                 @RequestParam(defaultValue = "1") int page,
+                                                 @RequestParam(defaultValue = "10") int size) {
+        if (tagId == null) {
+            return ApiResponse.fail("tagId 不能为空");
+        }
+        int safePage = clampPage(page);
+        int safeSize = clampSize(size);
+        int offset = (safePage - 1) * safeSize;
+        List<Post> list = postMapper.selectByTagPaged(tagId, offset, safeSize);
+        long total = postMapper.countByTag(tagId);
+        return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
+    }
+
+    @GetMapping("/search")
+    public ApiResponse<PageResponse<Post>> search(@RequestParam(required = false) String keyword,
+                                                  @RequestParam(required = false) Long tagId,
+                                                  @RequestParam(defaultValue = "1") int page,
+                                                  @RequestParam(defaultValue = "10") int size) {
+        int safePage = clampPage(page);
+        int safeSize = clampSize(size);
+        int offset = (safePage - 1) * safeSize;
+        List<Post> list = postMapper.searchPaged(keyword, tagId, offset, safeSize);
+        long total = postMapper.countSearch(keyword, tagId);
+        return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
+    }
+
+    @GetMapping("/{id}/related")
+    public ApiResponse<List<Post>> related(@PathVariable Long id,
+                                           @RequestParam(defaultValue = "6") int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 20);
+        List<Long> tagIds = postTagMapper.selectTagIdsByPostId(id);
+        if (tagIds == null || tagIds.isEmpty()) {
+            return ApiResponse.success(Collections.emptyList());
+        }
+        List<Post> list = postMapper.selectRelatedByTagIds(tagIds, id, safeLimit);
+        return ApiResponse.success(list);
     }
 
     private void saveTags(Long postId, List<Long> tagIds) {
@@ -230,5 +320,13 @@ public class PostController {
         resp.setTagIds(postTagMapper.selectTagIdsByPostId(postId));
         resp.setMedia(postMediaMapper.selectByPostId(postId));
         return resp;
+    }
+
+    private int clampPage(int page) {
+        return Math.max(page, 1);
+    }
+
+    private int clampSize(int size) {
+        return Math.min(Math.max(size, 1), 50);
     }
 }
