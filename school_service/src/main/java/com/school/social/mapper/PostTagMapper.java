@@ -2,6 +2,7 @@ package com.school.social.mapper;
 
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import com.school.social.entity.PostTag;
 
@@ -11,4 +12,7 @@ public interface PostTagMapper {
     int deleteByPk(@Param("postId") Long postId, @Param("tagId") Long tagId);
     PostTag selectByPk(@Param("postId") Long postId, @Param("tagId") Long tagId);
     List<PostTag> selectAll();
+
+    int deleteByPostId(@Param("postId") Long postId);
+    List<Long> selectTagIdsByPostId(@Param("postId") Long postId);
 }

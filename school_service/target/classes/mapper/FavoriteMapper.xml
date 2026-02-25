@@ -32,5 +32,27 @@
     <select id="selectAll" resultType="com.school.social.entity.Favorite">
         SELECT id, user_id, post_id, created_at FROM favorites
     </select>
+    <select id="selectFavoritePostsByUserId" resultType="com.school.social.entity.Post">
+        SELECT p.id, p.user_id, p.title, p.content, p.post_type, p.status, p.visibility, p.location, p.college,
+               p.like_count, p.comment_count, p.favorite_count, p.view_count, p.quality_score, p.is_pinned,
+               p.is_featured, p.created_at, p.updated_at, p.published_at
+        FROM favorites f
+        JOIN posts p ON f.post_id = p.id
+        WHERE f.user_id = #{userId}
+        ORDER BY f.created_at DESC
+    </select>
+    <select id="selectFavoritePostsByUserIdPaged" resultType="com.school.social.entity.Post">
+        SELECT p.id, p.user_id, p.title, p.content, p.post_type, p.status, p.visibility, p.location, p.college,
+               p.like_count, p.comment_count, p.favorite_count, p.view_count, p.quality_score, p.is_pinned,
+               p.is_featured, p.created_at, p.updated_at, p.published_at
+        FROM favorites f
+        JOIN posts p ON f.post_id = p.id
+        WHERE f.user_id = #{userId}
+        ORDER BY f.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countFavoritePostsByUserId" resultType="int">
+        SELECT COUNT(1) FROM favorites WHERE user_id = #{userId}
+    </select>
 
 </mapper>

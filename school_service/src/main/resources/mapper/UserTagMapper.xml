@@ -25,5 +25,19 @@
     <select id="selectAll" resultType="com.school.social.entity.UserTag">
         SELECT user_id, tag_id, weight, updated_at FROM user_tags
     </select>
+    <delete id="deleteByUserId">
+        DELETE FROM user_tags WHERE user_id = #{userId}
+    </delete>
+    <select id="selectByUserId" resultType="com.school.social.dto.user.UserTagView">
+        SELECT
+            ut.tag_id AS tagId,
+            t.name AS tagName,
+            t.type AS type,
+            ut.weight AS weight
+        FROM user_tags ut
+        JOIN tags t ON ut.tag_id = t.id
+        WHERE ut.user_id = #{userId}
+        ORDER BY ut.updated_at DESC
+    </select>
 
 </mapper>

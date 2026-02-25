@@ -21,5 +21,11 @@
     <select id="selectAll" resultType="com.school.social.entity.PostTag">
         SELECT post_id, tag_id FROM post_tags
     </select>
+    <delete id="deleteByPostId">
+        DELETE FROM post_tags WHERE post_id = #{postId}
+    </delete>
+    <select id="selectTagIdsByPostId" resultType="long">
+        SELECT tag_id FROM post_tags WHERE post_id = #{postId}
+    </select>
 
 </mapper>

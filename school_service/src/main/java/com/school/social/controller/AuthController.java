@@ -1,7 +1,9 @@
 package com.school.social.controller;
 
 import com.school.social.common.ApiResponse;
+import com.school.social.common.JwtUtil;
 import com.school.social.dto.auth.LoginRequest;
+import com.school.social.dto.auth.LoginResponse;
 import com.school.social.dto.auth.RegisterRequest;
 import com.school.social.dto.auth.UserView;
 import com.school.social.service.AuthService;
@@ -35,16 +37,23 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<UserView> login(@Validated @RequestBody LoginRequest request,
-                                       HttpServletRequest httpRequest) {
+    public ApiResponse<LoginResponse> login(@Validated @RequestBody LoginRequest request,
+                                            HttpServletRequest httpRequest) {
         try {
             String ip = resolveIp(httpRequest);
-            return ApiResponse.success(authService.login(request, ip));
+            UserView user = authService.login(request, ip);
+            String token = JwtUtil.generateToken(user.getId(), user.getUsername());
+            return ApiResponse.success(new LoginResponse(token, user));
         } catch (IllegalArgumentException ex) {
             return ApiResponse.fail(ex.getMessage());
         } catch (Exception ex) {
             return ApiResponse.fail("登录失败");
         }
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout() {
+        return ApiResponse.success(null);
     }
 
     private String resolveIp(HttpServletRequest request) {

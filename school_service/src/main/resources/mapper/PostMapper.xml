@@ -77,5 +77,41 @@
     <select id="selectAll" resultType="com.school.social.entity.Post">
         SELECT id, user_id, title, content, post_type, status, visibility, location, college, like_count, comment_count, favorite_count, view_count, quality_score, is_pinned, is_featured, created_at, updated_at, published_at FROM posts
     </select>
+    <select id="selectByUserId" resultType="com.school.social.entity.Post">
+        SELECT id, user_id, title, content, post_type, status, visibility, location, college, like_count, comment_count, favorite_count, view_count, quality_score, is_pinned, is_featured, created_at, updated_at, published_at
+        FROM posts
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+    <select id="selectByUserIdPaged" resultType="com.school.social.entity.Post">
+        SELECT id, user_id, title, content, post_type, status, visibility, location, college, like_count, comment_count, favorite_count, view_count, quality_score, is_pinned, is_featured, created_at, updated_at, published_at
+        FROM posts
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countByUserId" resultType="int">
+        SELECT COUNT(1) FROM posts WHERE user_id = #{userId}
+    </select>
+    <select id="selectPaged" resultType="com.school.social.entity.Post">
+        SELECT id, user_id, title, content, post_type, status, visibility, location, college, like_count, comment_count, favorite_count, view_count, quality_score, is_pinned, is_featured, created_at, updated_at, published_at
+        FROM posts
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(1)
+        FROM posts
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+    </select>
 
 </mapper>

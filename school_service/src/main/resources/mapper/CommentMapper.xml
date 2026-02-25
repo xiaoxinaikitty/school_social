@@ -44,5 +44,21 @@
     <select id="selectAll" resultType="com.school.social.entity.Comment">
         SELECT id, post_id, user_id, parent_id, content, status, like_count, created_at FROM comments
     </select>
+    <select id="selectByUserId" resultType="com.school.social.entity.Comment">
+        SELECT id, post_id, user_id, parent_id, content, status, like_count, created_at
+        FROM comments
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+    <select id="selectByUserIdPaged" resultType="com.school.social.entity.Comment">
+        SELECT id, post_id, user_id, parent_id, content, status, like_count, created_at
+        FROM comments
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countByUserId" resultType="int">
+        SELECT COUNT(1) FROM comments WHERE user_id = #{userId}
+    </select>
 
 </mapper>

@@ -1,6 +1,7 @@
 package com.school.social.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import com.school.social.entity.PostMedia;
 
@@ -11,4 +12,7 @@ public interface PostMediaMapper {
     int deleteById(Long id);
     PostMedia selectById(Long id);
     List<PostMedia> selectAll();
+
+    List<PostMedia> selectByPostId(@Param("postId") Long postId);
+    int deleteByPostId(@Param("postId") Long postId);
 }
