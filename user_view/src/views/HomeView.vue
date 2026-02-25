@@ -53,7 +53,7 @@ const logout = async () => {
           这里是你的个性化校园主页，聚合最新动态、热门话题与推荐内容。
         </p>
         <div class="hero-actions">
-          <button class="primary-btn" type="button">发布内容（即将上线）</button>
+          <RouterLink class="primary-btn" to="/posts/create">发布内容</RouterLink>
           <button class="ghost-btn" type="button">去发现</button>
           <button class="ghost-btn" type="button" @click="logout">退出登录</button>
         </div>

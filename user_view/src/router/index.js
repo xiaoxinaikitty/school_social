@@ -3,6 +3,9 @@ import AuthLoginView from '../views/AuthLoginView.vue'
 import AuthRegisterView from '../views/AuthRegisterView.vue'
 import HomeView from '../views/HomeView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import PostCreateView from '../views/PostCreateView.vue'
+import PostDetailView from '../views/PostDetailView.vue'
+import PostEditView from '../views/PostEditView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,6 +33,21 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: ProfileView,
+    },
+    {
+      path: '/posts/create',
+      name: 'post-create',
+      component: PostCreateView,
+    },
+    {
+      path: '/posts/:id',
+      name: 'post-detail',
+      component: PostDetailView,
+    },
+    {
+      path: '/posts/:id/edit',
+      name: 'post-edit',
+      component: PostEditView,
     },
   ],
 })

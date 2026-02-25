@@ -47,5 +47,14 @@
     <select id="selectAll" resultType="com.school.social.entity.PostMedia">
         SELECT id, post_id, media_type, url, sort_order, width, height, duration_sec, created_at FROM post_media
     </select>
+    <select id="selectByPostId" resultType="com.school.social.entity.PostMedia">
+        SELECT id, post_id, media_type, url, sort_order, width, height, duration_sec, created_at
+        FROM post_media
+        WHERE post_id = #{postId}
+        ORDER BY sort_order ASC, id ASC
+    </select>
+    <delete id="deleteByPostId">
+        DELETE FROM post_media WHERE post_id = #{postId}
+    </delete>
 
 </mapper>

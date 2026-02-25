@@ -12,6 +12,7 @@ import com.school.social.entity.PostTag;
 import com.school.social.mapper.PostMapper;
 import com.school.social.mapper.PostMediaMapper;
 import com.school.social.mapper.PostTagMapper;
+import com.school.social.mapper.TagMapper;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -40,6 +43,9 @@ public class PostController {
 
     @Resource
     private PostTagMapper postTagMapper;
+
+    @Resource
+    private TagMapper tagMapper;
 
     @PostMapping
     public ApiResponse<PostDetailResponse> create(@Validated @RequestBody PostCreateRequest request,
@@ -57,7 +63,7 @@ public class PostController {
         post.setLocation(request.getLocation());
         post.setCollege(request.getCollege());
         boolean isDraft = request.getDraft() != null && request.getDraft();
-        post.setStatus(isDraft ? 1 : 0);
+        post.setStatus(isDraft ? 3 : 0);
         LocalDateTime now = LocalDateTime.now();
         post.setCreatedAt(now);
         post.setUpdatedAt(now);
@@ -94,7 +100,11 @@ public class PostController {
         update.setCollege(request.getCollege());
         if (request.getDraft() != null) {
             boolean isDraft = request.getDraft();
-            update.setStatus(isDraft ? 1 : 0);
+            if (isDraft) {
+                update.setStatus(3);
+            } else {
+                update.setStatus(0);
+            }
             if (!isDraft && existing.getPublishedAt() == null) {
                 update.setPublishedAt(LocalDateTime.now());
             }
@@ -155,8 +165,16 @@ public class PostController {
         if (tagIds == null || tagIds.isEmpty()) {
             return;
         }
+        List<Long> existingIds = tagMapper.selectExistingIds(tagIds);
+        if (existingIds == null || existingIds.isEmpty()) {
+            return;
+        }
+        Set<Long> idSet = new HashSet<>(existingIds);
         for (Long tagId : tagIds) {
             if (tagId == null) {
+                continue;
+            }
+            if (!idSet.contains(tagId)) {
                 continue;
             }
             PostTag postTag = new PostTag();

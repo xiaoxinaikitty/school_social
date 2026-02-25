@@ -645,6 +645,30 @@
   gap: 1rem;
 }
 
+.post-page {
+  padding: clamp(2rem, 4vw, 4rem);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.media-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.media-row .field {
+  margin-bottom: 0;
+}
+
 .profile-header {
   display: flex;
   justify-content: space-between;
@@ -750,6 +774,94 @@
   color: var(--ink-500);
 }
 
+.status-pill {
+  align-self: flex-start;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.status-pill.pending {
+  background: rgba(248, 184, 78, 0.2);
+  color: #a06a00;
+}
+
+.status-pill.approved {
+  background: rgba(28, 124, 116, 0.18);
+  color: var(--teal-500);
+}
+
+.status-pill.rejected {
+  background: rgba(255, 122, 89, 0.2);
+  color: #b02d12;
+}
+
+.status-pill.draft {
+  background: rgba(16, 24, 40, 0.08);
+  color: var(--ink-500);
+}
+
+.post-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.post-content {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--ink-900);
+}
+
+.post-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  font-size: 0.85rem;
+  color: var(--ink-500);
+}
+
+.media-preview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.media-item {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(16, 24, 40, 0.08);
+  background: #fff;
+  padding: 0.6rem;
+}
+
+.media-item img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.feed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.ghost-btn.danger {
+  border-color: rgba(255, 122, 89, 0.5);
+  color: #b02d12;
+}
+
+.ghost-btn.danger:hover {
+  border-color: rgba(255, 122, 89, 0.9);
+  color: #b02d12;
+  box-shadow: 0 12px 24px rgba(255, 122, 89, 0.15);
+}
+
 .feed-empty {
   padding: 1rem;
   border-radius: 12px;
@@ -793,6 +905,14 @@
   .feed-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .media-preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .media-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 680px) {
@@ -812,6 +932,10 @@
   }
 
   .feed-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .media-preview {
     grid-template-columns: 1fr;
   }
 }

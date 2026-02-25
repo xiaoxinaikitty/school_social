@@ -1,8 +1,10 @@
 package com.school.social.mapper;
 
-import org.apache.ibatis.annotations.Mapper;
-import java.util.List;
 import com.school.social.entity.Tag;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 @Mapper
 public interface TagMapper {
@@ -11,4 +13,6 @@ public interface TagMapper {
     int deleteById(Long id);
     Tag selectById(Long id);
     List<Tag> selectAll();
+
+    List<Long> selectExistingIds(@Param("ids") List<Long> ids);
 }

@@ -56,6 +56,21 @@ const loadingFavorites = ref(false)
 const loadingComments = ref(false)
 const feedError = ref('')
 
+const statusMap = (status) => {
+  switch (status) {
+    case 0:
+      return { label: '待审', tone: 'pending' }
+    case 1:
+      return { label: '通过', tone: 'approved' }
+    case 2:
+      return { label: '驳回', tone: 'rejected' }
+    case 3:
+      return { label: '草稿', tone: 'draft' }
+    default:
+      return { label: '未知', tone: 'unknown' }
+  }
+}
+
 const displayName = computed(() => {
   if (profile.value?.username) return profile.value.username
   return '同学'
@@ -218,9 +233,39 @@ const loadPosts = async (page = 1) => {
     postsData.value = data.data
     postsPage.value = data.data.page
   } catch (err) {
-    feedError.value = '网络错误，无法获取发布。'
-  } finally {
-    loadingPosts.value = false
+      feedError.value = '网络错误，无法获取发布。'
+    } finally {
+      loadingPosts.value = false
+    }
+  }
+
+const viewPost = (postId) => {
+  if (!postId) return
+  router.push(`/posts/${postId}`)
+}
+
+const editPost = (postId) => {
+  if (!postId) return
+  router.push(`/posts/${postId}/edit`)
+}
+
+const deletePost = async (postId) => {
+  if (!postId) return
+  if (!confirm('确定要删除这条内容吗？')) return
+  try {
+    const res = await apiFetch(`/api/posts/${postId}`, { method: 'DELETE' })
+    if (res.status === 401) {
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      feedError.value = data.message || '删除失败。'
+      return
+    }
+    loadPosts(postsPage.value || 1)
+  } catch (err) {
+    feedError.value = '网络错误，无法删除。'
   }
 }
 
@@ -465,6 +510,14 @@ onMounted(() => {
             <h4>{{ post.title || '未命名内容' }}</h4>
             <p>{{ post.content?.slice(0, 60) || '暂无内容' }}</p>
             <span>发布于：{{ post.createdAt }}</span>
+            <span class="status-pill" :class="statusMap(post.status).tone">
+              {{ statusMap(post.status).label }}
+            </span>
+            <div class="feed-actions">
+              <button class="ghost-btn" type="button" @click="viewPost(post.id)">查看</button>
+              <button class="ghost-btn" type="button" @click="editPost(post.id)">编辑</button>
+              <button class="ghost-btn danger" type="button" @click="deletePost(post.id)">删除</button>
+            </div>
           </div>
         </div>
         <div class="pager" v-if="postsData.total > pageSize">
@@ -491,6 +544,9 @@ onMounted(() => {
             <h4>{{ post.title || '未命名内容' }}</h4>
             <p>{{ post.content?.slice(0, 60) || '暂无内容' }}</p>
             <span>收藏于：{{ post.createdAt }}</span>
+            <div class="feed-actions">
+              <button class="ghost-btn" type="button" @click="viewPost(post.id)">查看</button>
+            </div>
           </div>
         </div>
         <div class="pager" v-if="favoritesData.total > pageSize">
