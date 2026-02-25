@@ -32,5 +32,39 @@
     <select id="selectAll" resultType="com.school.social.entity.Follow">
         SELECT id, follower_id, followee_id, created_at FROM follows
     </select>
+    <select id="selectByFollowerAndFollowee" resultType="com.school.social.entity.Follow">
+        SELECT id, follower_id, followee_id, created_at
+        FROM follows
+        WHERE follower_id = #{followerId}
+          AND followee_id = #{followeeId}
+        LIMIT 1
+    </select>
+    <delete id="deleteByFollowerAndFollowee">
+        DELETE FROM follows WHERE follower_id = #{followerId} AND followee_id = #{followeeId}
+    </delete>
+    <select id="countFollowers" resultType="int">
+        SELECT COUNT(1) FROM follows WHERE followee_id = #{userId}
+    </select>
+    <select id="countFollowing" resultType="int">
+        SELECT COUNT(1) FROM follows WHERE follower_id = #{userId}
+    </select>
+    <select id="selectFollowersPaged" resultType="com.school.social.dto.auth.UserView">
+        SELECT u.id, u.username, u.email, u.phone, u.avatar_url, u.gender,
+               u.school, u.college, u.grade, u.bio, u.status, u.last_login_at, u.created_at
+        FROM follows f
+        JOIN users u ON f.follower_id = u.id
+        WHERE f.followee_id = #{userId}
+        ORDER BY f.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="selectFollowingPaged" resultType="com.school.social.dto.auth.UserView">
+        SELECT u.id, u.username, u.email, u.phone, u.avatar_url, u.gender,
+               u.school, u.college, u.grade, u.bio, u.status, u.last_login_at, u.created_at
+        FROM follows f
+        JOIN users u ON f.followee_id = u.id
+        WHERE f.follower_id = #{userId}
+        ORDER BY f.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
 
 </mapper>

@@ -362,3 +362,133 @@
 - **参数**: `limit`（默认 6，最大 20）
 - **响应**: `List<Post>`
 
+## 6. 互动与社交
+
+### 6.1 点赞（内容/评论）
+- **URL**: `POST /api/likes`
+- **说明**: 对内容或评论点赞
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **请求体**（JSON）:
+```json
+{
+  "targetType": 0,
+  "targetId": 1001
+}
+```
+- **targetType**: `0`=内容，`1`=评论
+- **响应**:
+```json
+{ "code": 0, "message": "success", "data": null }
+```
+
+### 6.2 取消点赞
+- **URL**: `DELETE /api/likes`
+- **说明**: 取消点赞
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `targetType`，`targetId`
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 6.3 收藏内容
+- **URL**: `POST /api/favorites`
+- **说明**: 收藏内容
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **请求体**（JSON）:
+```json
+{ "postId": 1001 }
+```
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 6.4 取消收藏
+- **URL**: `DELETE /api/favorites/{postId}`
+- **说明**: 取消收藏
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 6.5 发布评论/回复
+- **URL**: `POST /api/comments`
+- **说明**: 发布评论；传 `parentId` 表示回复
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **请求体**（JSON）:
+```json
+{
+  "postId": 1001,
+  "content": "这条内容很赞！",
+  "parentId": null
+}
+```
+- **响应**:
+```json
+{ "code": 0, "message": "success", "data": { "id": 1, "postId": 1001, "userId": 2 } }
+```
+
+### 6.6 评论列表（支持查看回复）
+- **URL**: `GET /api/comments`
+- **说明**: 查询评论列表，`parentId` 为空时为一级评论
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `postId`（必填），`parentId`（可选），`page`，`size`
+- **响应**: `PageResponse<Comment>`
+
+### 6.7 删除评论
+- **URL**: `DELETE /api/comments/{id}`
+- **说明**: 删除本人评论（含删除其回复并同步扣减计数）
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 6.8 分享内容
+- **URL**: `POST /api/shares`
+- **说明**: 记录分享行为（当前仅记录行为日志）
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **请求体**（JSON）:
+```json
+{ "postId": 1001, "channel": "wechat" }
+```
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 6.9 关注用户
+- **URL**: `POST /api/follows/{followeeId}`
+- **说明**: 关注指定用户
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 6.10 取消关注
+- **URL**: `DELETE /api/follows/{followeeId}`
+- **说明**: 取消关注
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 6.11 关注列表
+- **URL**: `GET /api/follows/following`
+- **说明**: 获取当前用户关注列表
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `page`，`size`
+- **响应**: `PageResponse<UserView>`
+
+### 6.12 粉丝列表
+- **URL**: `GET /api/follows/followers`
+- **说明**: 获取当前用户粉丝列表
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `page`，`size`
+- **响应**: `PageResponse<UserView>`
+
+### 6.13 关注统计
+- **URL**: `GET /api/follows/stats`
+- **说明**: 获取当前用户关注/粉丝数量
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**:
+```json
+{ "code": 0, "message": "success", "data": { "followingCount": 3, "followerCount": 5 } }
+```
+
+### 6.14 内容互动统计
+- **URL**: `GET /api/posts/{id}/stats`
+- **说明**: 获取内容点赞/评论/收藏/浏览统计
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": { "postId": 1001, "likeCount": 2, "commentCount": 3, "favoriteCount": 1, "viewCount": 8 }
+}
+```
+

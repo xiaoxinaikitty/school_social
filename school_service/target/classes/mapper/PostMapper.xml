@@ -256,4 +256,40 @@
         LIMIT #{limit}
     </select>
 
+    <update id="increaseLikeCount">
+        UPDATE posts
+        SET like_count = IFNULL(like_count, 0) + 1
+        WHERE id = #{postId}
+    </update>
+    <update id="decreaseLikeCount">
+        UPDATE posts
+        SET like_count = GREATEST(IFNULL(like_count, 0) - 1, 0)
+        WHERE id = #{postId}
+    </update>
+    <update id="increaseFavoriteCount">
+        UPDATE posts
+        SET favorite_count = IFNULL(favorite_count, 0) + 1
+        WHERE id = #{postId}
+    </update>
+    <update id="decreaseFavoriteCount">
+        UPDATE posts
+        SET favorite_count = GREATEST(IFNULL(favorite_count, 0) - 1, 0)
+        WHERE id = #{postId}
+    </update>
+    <update id="increaseCommentCount">
+        UPDATE posts
+        SET comment_count = IFNULL(comment_count, 0) + 1
+        WHERE id = #{postId}
+    </update>
+    <update id="decreaseCommentCount">
+        UPDATE posts
+        SET comment_count = GREATEST(IFNULL(comment_count, 0) - 1, 0)
+        WHERE id = #{postId}
+    </update>
+    <update id="decreaseCommentCountBy">
+        UPDATE posts
+        SET comment_count = GREATEST(IFNULL(comment_count, 0) - #{amount}, 0)
+        WHERE id = #{postId}
+    </update>
+
 </mapper>

@@ -35,5 +35,19 @@
     <select id="selectAll" resultType="com.school.social.entity.Like">
         SELECT id, user_id, target_type, target_id, created_at FROM likes
     </select>
+    <select id="selectByUserAndTarget" resultType="com.school.social.entity.Like">
+        SELECT id, user_id, target_type, target_id, created_at
+        FROM likes
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
+        LIMIT 1
+    </select>
+    <delete id="deleteByUserAndTarget">
+        DELETE FROM likes
+        WHERE user_id = #{userId}
+          AND target_type = #{targetType}
+          AND target_id = #{targetId}
+    </delete>
 
 </mapper>

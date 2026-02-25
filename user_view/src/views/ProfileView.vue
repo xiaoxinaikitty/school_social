@@ -47,6 +47,16 @@ const loadingFavorites = ref(false)
 const loadingComments = ref(false)
 const feedError = ref('')
 
+const followStats = ref({ followingCount: 0, followerCount: 0 })
+const socialTab = ref('following')
+const followingData = ref({ page: 1, size: 6, total: 0, list: [] })
+const followersData = ref({ page: 1, size: 6, total: 0, list: [] })
+const followingPage = ref(1)
+const followersPage = ref(1)
+const loadingFollowing = ref(false)
+const loadingFollowers = ref(false)
+const socialError = ref('')
+
 const statusMap = (status) => {
   switch (status) {
     case 0:
@@ -333,6 +343,114 @@ const loadComments = async (page = 1) => {
   }
 }
 
+const loadFollowStats = async () => {
+  socialError.value = ''
+  try {
+    const res = await apiFetch('/api/follows/stats')
+    if (res.status === 401) {
+      socialError.value = '登录已过期，请重新登录。'
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      socialError.value = data.message || '获取关注统计失败。'
+      return
+    }
+    followStats.value = data.data || { followingCount: 0, followerCount: 0 }
+  } catch (err) {
+    socialError.value = '网络错误，无法获取关注统计。'
+  }
+}
+
+const loadFollowing = async (page = 1) => {
+  loadingFollowing.value = true
+  socialError.value = ''
+  try {
+    const res = await apiFetch(`/api/follows/following?page=${page}&size=6`)
+    if (res.status === 401) {
+      socialError.value = '登录已过期，请重新登录。'
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      socialError.value = data.message || '获取关注列表失败。'
+      return
+    }
+    followingData.value = data.data
+    followingPage.value = data.data.page
+  } catch (err) {
+    socialError.value = '网络错误，无法获取关注列表。'
+  } finally {
+    loadingFollowing.value = false
+  }
+}
+
+const loadFollowers = async (page = 1) => {
+  loadingFollowers.value = true
+  socialError.value = ''
+  try {
+    const res = await apiFetch(`/api/follows/followers?page=${page}&size=6`)
+    if (res.status === 401) {
+      socialError.value = '登录已过期，请重新登录。'
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      socialError.value = data.message || '获取粉丝列表失败。'
+      return
+    }
+    followersData.value = data.data
+    followersPage.value = data.data.page
+  } catch (err) {
+    socialError.value = '网络错误，无法获取粉丝列表。'
+  } finally {
+    loadingFollowers.value = false
+  }
+}
+
+const followUser = async (userId) => {
+  if (!userId) return
+  socialError.value = ''
+  try {
+    const res = await apiFetch(`/api/follows/${userId}`, { method: 'POST' })
+    if (res.status === 401) {
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      socialError.value = data.message || '关注失败。'
+      return
+    }
+    await Promise.all([loadFollowStats(), loadFollowing(followingPage.value || 1), loadFollowers(followersPage.value || 1)])
+  } catch (err) {
+    socialError.value = '网络错误，关注失败。'
+  }
+}
+
+const unfollowUser = async (userId) => {
+  if (!userId) return
+  socialError.value = ''
+  try {
+    const res = await apiFetch(`/api/follows/${userId}`, { method: 'DELETE' })
+    if (res.status === 401) {
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      socialError.value = data.message || '取消关注失败。'
+      return
+    }
+    await Promise.all([loadFollowStats(), loadFollowing(followingPage.value || 1), loadFollowers(followersPage.value || 1)])
+  } catch (err) {
+    socialError.value = '网络错误，取消关注失败。'
+  }
+}
+
 const switchTab = (tab) => {
   activeTab.value = tab
   if (tab === 'posts') loadPosts(postsPage.value || 1)
@@ -353,6 +471,9 @@ onMounted(() => {
   loadAvailableTags()
   loadUserTags()
   loadPosts()
+  loadFollowStats()
+  loadFollowing()
+  loadFollowers()
 })
 </script>
 
@@ -613,6 +734,93 @@ onMounted(() => {
             type="button"
             :disabled="commentsPage >= Math.ceil(commentsData.total / pageSize)"
             @click="loadComments(commentsPage + 1)"
+          >
+            下一页
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="profile-section">
+      <div class="profile-header">
+        <div>
+          <h2>关注与粉丝</h2>
+          <p>维护你的社交关系与关注动态。</p>
+        </div>
+      </div>
+      <div class="social-stats">
+        <div>
+          <span>关注</span>
+          <strong>{{ followStats.followingCount }}</strong>
+        </div>
+        <div>
+          <span>粉丝</span>
+          <strong>{{ followStats.followerCount }}</strong>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn" :class="{ active: socialTab === 'following' }" @click="socialTab = 'following'">
+          我关注的
+        </button>
+        <button class="tab-btn" :class="{ active: socialTab === 'followers' }" @click="socialTab = 'followers'">
+          我的粉丝
+        </button>
+      </div>
+
+      <p v-if="socialError" class="form-alert error">{{ socialError }}</p>
+
+      <div v-if="socialTab === 'following'" class="feed-list">
+        <div v-if="loadingFollowing" class="feed-empty">加载中...</div>
+        <div v-else-if="!followingData.list || followingData.list.length === 0" class="feed-empty">暂无关注。</div>
+        <div v-else class="feed-grid">
+          <div v-for="userItem in followingData.list" :key="userItem.id" class="feed-item">
+            <h4>{{ userItem.username || '未命名用户' }}</h4>
+            <p>{{ userItem.school || '未填写学校' }}</p>
+            <span>{{ userItem.college || '未填写学院' }}</span>
+            <div class="feed-actions">
+              <button class="ghost-btn danger" type="button" @click="unfollowUser(userItem.id)">取消关注</button>
+            </div>
+          </div>
+        </div>
+        <div class="pager" v-if="followingData.total > 6">
+          <button class="ghost-btn" type="button" :disabled="followingPage <= 1" @click="loadFollowing(followingPage - 1)">
+            上一页
+          </button>
+          <span>{{ followingPage }} / {{ Math.ceil(followingData.total / 6) }}</span>
+          <button
+            class="ghost-btn"
+            type="button"
+            :disabled="followingPage >= Math.ceil(followingData.total / 6)"
+            @click="loadFollowing(followingPage + 1)"
+          >
+            下一页
+          </button>
+        </div>
+      </div>
+
+      <div v-if="socialTab === 'followers'" class="feed-list">
+        <div v-if="loadingFollowers" class="feed-empty">加载中...</div>
+        <div v-else-if="!followersData.list || followersData.list.length === 0" class="feed-empty">暂无粉丝。</div>
+        <div v-else class="feed-grid">
+          <div v-for="userItem in followersData.list" :key="userItem.id" class="feed-item">
+            <h4>{{ userItem.username || '未命名用户' }}</h4>
+            <p>{{ userItem.school || '未填写学校' }}</p>
+            <span>{{ userItem.college || '未填写学院' }}</span>
+            <div class="feed-actions">
+              <button class="ghost-btn" type="button" @click="followUser(userItem.id)">关注</button>
+            </div>
+          </div>
+        </div>
+        <div class="pager" v-if="followersData.total > 6">
+          <button class="ghost-btn" type="button" :disabled="followersPage <= 1" @click="loadFollowers(followersPage - 1)">
+            上一页
+          </button>
+          <span>{{ followersPage }} / {{ Math.ceil(followersData.total / 6) }}</span>
+          <button
+            class="ghost-btn"
+            type="button"
+            :disabled="followersPage >= Math.ceil(followersData.total / 6)"
+            @click="loadFollowers(followersPage + 1)"
           >
             下一页
           </button>

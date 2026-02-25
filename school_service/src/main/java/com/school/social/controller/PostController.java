@@ -6,6 +6,7 @@ import com.school.social.dto.post.PostCreateRequest;
 import com.school.social.dto.post.PostDetailResponse;
 import com.school.social.dto.post.PostMediaRequest;
 import com.school.social.dto.post.PostUpdateRequest;
+import com.school.social.dto.interaction.PostStatsResponse;
 import com.school.social.entity.Post;
 import com.school.social.entity.PostMedia;
 import com.school.social.entity.PostTag;
@@ -249,6 +250,21 @@ public class PostController {
         }
         List<Post> list = postMapper.selectRelatedByTagIds(tagIds, id, safeLimit);
         return ApiResponse.success(list);
+    }
+
+    @GetMapping("/{id}/stats")
+    public ApiResponse<PostStatsResponse> stats(@PathVariable Long id) {
+        Post post = postMapper.selectById(id);
+        if (post == null) {
+            return ApiResponse.fail("内容不存在");
+        }
+        PostStatsResponse resp = new PostStatsResponse();
+        resp.setPostId(post.getId());
+        resp.setLikeCount(post.getLikeCount());
+        resp.setCommentCount(post.getCommentCount());
+        resp.setFavoriteCount(post.getFavoriteCount());
+        resp.setViewCount(post.getViewCount());
+        return ApiResponse.success(resp);
     }
 
     private void saveTags(Long postId, List<Long> tagIds) {

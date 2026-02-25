@@ -889,6 +889,32 @@
   gap: 1rem;
 }
 
+.interaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(16, 24, 40, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.interaction-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  font-size: 0.85rem;
+  color: var(--ink-600);
+}
+
+.interaction-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
 .post-content {
   font-size: 1rem;
   line-height: 1.8;
@@ -929,6 +955,89 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.6rem;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.comment-item {
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(16, 24, 40, 0.08);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.comment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--ink-500);
+}
+
+.comment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.reply-section {
+  padding: 0.8rem;
+  border-radius: 12px;
+  background: rgba(16, 24, 40, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.reply-item {
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(16, 24, 40, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.reply-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.social-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.6rem;
+  font-size: 0.9rem;
+  color: var(--ink-600);
+}
+
+.social-stats strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 1.2rem;
+  color: var(--ink-900);
 }
 
 .ghost-btn.danger {
@@ -995,6 +1104,15 @@
   }
 
   .discover-search {
+    grid-template-columns: 1fr;
+  }
+
+  .interaction-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .reply-form {
     grid-template-columns: 1fr;
   }
 }

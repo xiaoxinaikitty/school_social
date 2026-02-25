@@ -21,4 +21,12 @@ public interface FavoriteMapper {
                                                 @Param("size") int size);
 
     int countFavoritePostsByUserId(@Param("userId") Long userId);
+
+    Favorite selectByUserAndPost(@Param("userId") Long userId,
+                                 @Param("postId") Long postId);
+
+    int deleteByUserAndPost(@Param("userId") Long userId,
+                            @Param("postId") Long postId);
+
+    int countByPostId(@Param("postId") Long postId);
 }

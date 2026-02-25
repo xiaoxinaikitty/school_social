@@ -65,4 +65,19 @@ public interface PostMapper {
     List<Post> selectRelatedByTagIds(@Param("tagIds") List<Long> tagIds,
                                      @Param("excludeId") Long excludeId,
                                      @Param("limit") int limit);
+
+    int increaseLikeCount(@Param("postId") Long postId);
+
+    int decreaseLikeCount(@Param("postId") Long postId);
+
+    int increaseFavoriteCount(@Param("postId") Long postId);
+
+    int decreaseFavoriteCount(@Param("postId") Long postId);
+
+    int increaseCommentCount(@Param("postId") Long postId);
+
+    int decreaseCommentCount(@Param("postId") Long postId);
+
+    int decreaseCommentCountBy(@Param("postId") Long postId,
+                               @Param("amount") int amount);
 }

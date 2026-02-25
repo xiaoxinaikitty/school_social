@@ -20,4 +20,20 @@ public interface CommentMapper {
                                       @Param("size") int size);
 
     int countByUserId(@Param("userId") Long userId);
+
+    List<Comment> selectByPostIdPaged(@Param("postId") Long postId,
+                                      @Param("parentId") Long parentId,
+                                      @Param("offset") int offset,
+                                      @Param("size") int size);
+
+    int countByPostId(@Param("postId") Long postId,
+                      @Param("parentId") Long parentId);
+
+    int deleteByParentId(@Param("parentId") Long parentId);
+
+    int countByParentId(@Param("parentId") Long parentId);
+
+    int increaseLikeCount(@Param("id") Long id);
+
+    int decreaseLikeCount(@Param("id") Long id);
 }

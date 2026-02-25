@@ -54,5 +54,18 @@
     <select id="countFavoritePostsByUserId" resultType="int">
         SELECT COUNT(1) FROM favorites WHERE user_id = #{userId}
     </select>
+    <select id="selectByUserAndPost" resultType="com.school.social.entity.Favorite">
+        SELECT id, user_id, post_id, created_at
+        FROM favorites
+        WHERE user_id = #{userId}
+          AND post_id = #{postId}
+        LIMIT 1
+    </select>
+    <delete id="deleteByUserAndPost">
+        DELETE FROM favorites WHERE user_id = #{userId} AND post_id = #{postId}
+    </delete>
+    <select id="countByPostId" resultType="int">
+        SELECT COUNT(1) FROM favorites WHERE post_id = #{postId}
+    </select>
 
 </mapper>
