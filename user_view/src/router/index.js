@@ -6,6 +6,7 @@ import ProfileView from '../views/ProfileView.vue'
 import PostCreateView from '../views/PostCreateView.vue'
 import PostDetailView from '../views/PostDetailView.vue'
 import PostEditView from '../views/PostEditView.vue'
+import SocialView from '../views/SocialView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -48,6 +49,11 @@ const router = createRouter({
       path: '/posts/:id/edit',
       name: 'post-edit',
       component: PostEditView,
+    },
+    {
+      path: '/social',
+      name: 'social',
+      component: SocialView,
     },
   ],
 })

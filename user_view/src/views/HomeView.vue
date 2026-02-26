@@ -31,6 +31,8 @@ const activeTagId = ref(null)
 const searchKeyword = ref('')
 const searchTagId = ref('')
 
+const unreadCount = ref(0)
+
 const totalPages = computed(() => {
   const pages = Math.ceil(total.value / size.value)
   return pages > 0 ? pages : 1
@@ -125,6 +127,23 @@ const loadTags = async () => {
     tagError.value = '网络错误，无法获取话题列表。'
   } finally {
     tagLoading.value = false
+  }
+}
+
+const loadUnreadCount = async () => {
+  try {
+    const res = await apiFetch('/api/notifications/unread-count')
+    if (res.status === 401) {
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      return
+    }
+    unreadCount.value = data.data ?? 0
+  } catch (err) {
+    // ignore
   }
 }
 
@@ -245,6 +264,7 @@ onMounted(() => {
   }
   loadTags()
   loadFeed()
+  loadUnreadCount()
 })
 </script>
 
@@ -278,10 +298,10 @@ onMounted(() => {
           <p class="stat-value">8</p>
           <p class="stat-note">覆盖社团、学习与校园生活</p>
         </div>
-        <div class="stat-card">
+        <div class="stat-card link-card" role="button" tabindex="0" @click="router.push('/social')" @keydown.enter="router.push('/social')">
           <p class="stat-label">互动提醒</p>
-          <p class="stat-value">3</p>
-          <p class="stat-note">点赞评论集中展示</p>
+          <p class="stat-value">{{ unreadCount }}</p>
+          <p class="stat-note">未读通知实时更新</p>
         </div>
       </div>
     </header>
@@ -297,11 +317,11 @@ onMounted(() => {
         <p>聚合学院、社团、活动等最新发布。</p>
         <span class="module-tag">动态广场</span>
       </article>
-      <article class="module-card">
+      <RouterLink class="module-card link-card" to="/social">
         <h3>互动社交</h3>
         <p>点赞评论、关注关系与消息提醒。</p>
         <span class="module-tag">社交连接</span>
-      </article>
+      </RouterLink>
       <RouterLink class="module-card link-card" to="/profile">
         <h3>个人中心</h3>
         <p>个人资料、兴趣标签与内容管理。</p>
@@ -398,5 +418,6 @@ onMounted(() => {
         <button class="ghost-btn" type="button" :disabled="page >= totalPages || feedLoading" @click="nextPage">下一页</button>
       </div>
     </section>
+
   </div>
 </template>

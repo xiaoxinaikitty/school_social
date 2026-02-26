@@ -492,3 +492,86 @@
 }
 ```
 
+## 7. 消息与通知
+
+### 7.1 通知列表
+- **URL**: `GET /api/notifications`
+- **说明**: 获取当前用户通知列表
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `page`（默认 1），`size`（默认 10，最大 50），`isRead`（可选，0=未读，1=已读）
+- **响应**: `PageResponse<Notification>`
+
+### 7.2 未读数量
+- **URL**: `GET /api/notifications/unread-count`
+- **说明**: 获取未读通知数量
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**:
+```json
+{ "code": 0, "message": "success", "data": 5 }
+```
+
+### 7.3 标记已读
+- **URL**: `PUT /api/notifications/{id}/read`
+- **说明**: 标记单条通知为已读
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 7.4 全部已读
+- **URL**: `PUT /api/notifications/read-all`
+- **说明**: 标记全部通知为已读
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 7.5 公告列表
+- **URL**: `GET /api/announcements`
+- **说明**: 获取系统公告列表
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `page`（默认 1），`size`（默认 10，最大 50），`status`（可选）
+- **响应**: `PageResponse<Announcement>`
+
+### 7.6 公告详情
+- **URL**: `GET /api/announcements/{id}`
+- **说明**: 获取公告详情
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": { "id": 1, "title": "系统维护通知", "content": "...", "status": 0 }
+}
+```
+
+### 7.7 通知类型说明
+- **type**: `0`点赞，`1`评论，`2`回复，`3`关注，`4`系统/审核
+- **refType**: `0`内容，`1`评论，`2`用户
+
+## 8. 举报与反馈
+
+### 8.1 提交举报
+- **URL**: `POST /api/reports`
+- **说明**: 举报内容/评论/用户
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **请求体**（JSON）:
+```json
+{
+  "targetType": 0,
+  "targetId": 1001,
+  "reason": "不实信息",
+  "detail": "内容含有虚假描述"
+}
+```
+- **targetType**: `0`内容，`1`评论，`2`用户
+- **响应**:
+```json
+{ "code": 0, "message": "success", "data": { "id": 1, "status": 0 } }
+```
+
+### 8.2 我的举报记录
+- **URL**: `GET /api/reports`
+- **说明**: 查看当前用户的举报记录与处理结果
+- **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
+- **参数**: `page`（默认 1），`size`（默认 10，最大 50），`status`（可选）
+- **status**: `0`待处理，`1`已处理
+- **响应**: `PageResponse<Report>`
+

@@ -5,8 +5,10 @@ import com.school.social.common.PageResponse;
 import com.school.social.dto.auth.UserView;
 import com.school.social.dto.interaction.FollowStatsResponse;
 import com.school.social.entity.Follow;
+import com.school.social.entity.Notification;
 import com.school.social.entity.User;
 import com.school.social.mapper.FollowMapper;
+import com.school.social.mapper.NotificationMapper;
 import com.school.social.mapper.UserMapper;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,11 +26,17 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/follows")
 public class FollowController {
+    private static final int NOTIFY_FOLLOW = 3;
+    private static final int REF_USER = 2;
+
     @Resource
     private FollowMapper followMapper;
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private NotificationMapper notificationMapper;
 
     @PostMapping("/{followeeId}")
     public ApiResponse<Void> follow(@PathVariable Long followeeId,
@@ -56,6 +64,7 @@ public class FollowController {
         follow.setFolloweeId(followeeId);
         follow.setCreatedAt(LocalDateTime.now());
         followMapper.insert(follow);
+        createFollowNotification(userId, followeeId);
         return ApiResponse.success(null);
     }
 
@@ -118,6 +127,22 @@ public class FollowController {
         int following = followMapper.countFollowing(userId);
         int followers = followMapper.countFollowers(userId);
         return ApiResponse.success(new FollowStatsResponse(following, followers));
+    }
+
+    private void createFollowNotification(Long followerId, Long followeeId) {
+        if (followeeId == null || followeeId.equals(followerId)) {
+            return;
+        }
+        Notification notification = new Notification();
+        notification.setUserId(followeeId);
+        notification.setType(NOTIFY_FOLLOW);
+        notification.setTitle("新增关注");
+        notification.setContent("有用户关注了你");
+        notification.setRefType(REF_USER);
+        notification.setRefId(followerId);
+        notification.setIsRead(0);
+        notification.setCreatedAt(LocalDateTime.now());
+        notificationMapper.insert(notification);
     }
 }
 

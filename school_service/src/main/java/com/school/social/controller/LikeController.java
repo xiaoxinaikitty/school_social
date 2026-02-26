@@ -4,9 +4,11 @@ import com.school.social.common.ApiResponse;
 import com.school.social.dto.interaction.LikeRequest;
 import com.school.social.entity.Comment;
 import com.school.social.entity.Like;
+import com.school.social.entity.Notification;
 import com.school.social.entity.Post;
 import com.school.social.mapper.CommentMapper;
 import com.school.social.mapper.LikeMapper;
+import com.school.social.mapper.NotificationMapper;
 import com.school.social.mapper.PostMapper;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +26,7 @@ import java.time.LocalDateTime;
 public class LikeController {
     private static final int TARGET_POST = 0;
     private static final int TARGET_COMMENT = 1;
+    private static final int NOTIFY_LIKE = 0;
 
     @Resource
     private LikeMapper likeMapper;
@@ -33,6 +36,9 @@ public class LikeController {
 
     @Resource
     private CommentMapper commentMapper;
+
+    @Resource
+    private NotificationMapper notificationMapper;
 
     @PostMapping
     public ApiResponse<Void> like(@RequestBody LikeRequest request,
@@ -76,6 +82,7 @@ public class LikeController {
         } else {
             commentMapper.increaseLikeCount(targetId);
         }
+        createLikeNotification(userId, targetType, targetId);
         return ApiResponse.success(null);
     }
 
@@ -104,6 +111,40 @@ public class LikeController {
             commentMapper.decreaseLikeCount(targetId);
         }
         return ApiResponse.success(null);
+    }
+
+    private void createLikeNotification(Long actorId, Integer targetType, Long targetId) {
+        if (targetType == TARGET_POST) {
+            Post post = postMapper.selectById(targetId);
+            if (post == null || post.getUserId() == null || post.getUserId().equals(actorId)) {
+                return;
+            }
+            Notification notification = new Notification();
+            notification.setUserId(post.getUserId());
+            notification.setType(NOTIFY_LIKE);
+            notification.setTitle("收到点赞");
+            notification.setContent("你的内容被点赞");
+            notification.setRefType(TARGET_POST);
+            notification.setRefId(targetId);
+            notification.setIsRead(0);
+            notification.setCreatedAt(LocalDateTime.now());
+            notificationMapper.insert(notification);
+            return;
+        }
+        Comment comment = commentMapper.selectById(targetId);
+        if (comment == null || comment.getUserId() == null || comment.getUserId().equals(actorId)) {
+            return;
+        }
+        Notification notification = new Notification();
+        notification.setUserId(comment.getUserId());
+        notification.setType(NOTIFY_LIKE);
+        notification.setTitle("收到点赞");
+        notification.setContent("你的评论被点赞");
+        notification.setRefType(TARGET_COMMENT);
+        notification.setRefId(targetId);
+        notification.setIsRead(0);
+        notification.setCreatedAt(LocalDateTime.now());
+        notificationMapper.insert(notification);
     }
 }
 

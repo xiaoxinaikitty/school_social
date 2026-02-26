@@ -53,5 +53,28 @@
     <select id="selectAll" resultType="com.school.social.entity.Report">
         SELECT id, reporter_id, target_type, target_id, reason, detail, status, handled_by, handled_at, result, created_at FROM reports
     </select>
+    <select id="selectByReporterPaged" resultType="com.school.social.entity.Report">
+        SELECT id, reporter_id, target_type, target_id, reason, detail, status,
+               handled_by, handled_at, result, created_at
+        FROM reports
+        <where>
+            reporter_id = #{reporterId}
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countByReporter" resultType="int">
+        SELECT COUNT(1)
+        FROM reports
+        <where>
+            reporter_id = #{reporterId}
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
 
 </mapper>

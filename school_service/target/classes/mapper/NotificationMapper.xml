@@ -47,5 +47,36 @@
     <select id="selectAll" resultType="com.school.social.entity.Notification">
         SELECT id, user_id, type, title, content, ref_type, ref_id, is_read, created_at FROM notifications
     </select>
+    <select id="selectByUserPaged" resultType="com.school.social.entity.Notification">
+        SELECT id, user_id, type, title, content, ref_type, ref_id, is_read, created_at
+        FROM notifications
+        <where>
+            user_id = #{userId}
+            <if test="isRead != null">
+                AND is_read = #{isRead}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countByUser" resultType="int">
+        SELECT COUNT(1)
+        FROM notifications
+        <where>
+            user_id = #{userId}
+            <if test="isRead != null">
+                AND is_read = #{isRead}
+            </if>
+        </where>
+    </select>
+    <select id="countUnread" resultType="int">
+        SELECT COUNT(1) FROM notifications WHERE user_id = #{userId} AND is_read = 0
+    </select>
+    <update id="markRead">
+        UPDATE notifications SET is_read = 1 WHERE id = #{id} AND user_id = #{userId}
+    </update>
+    <update id="markAllRead">
+        UPDATE notifications SET is_read = 1 WHERE user_id = #{userId}
+    </update>
 
 </mapper>

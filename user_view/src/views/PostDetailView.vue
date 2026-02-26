@@ -34,6 +34,25 @@ const replyMap = ref({})
 const replyDrafts = ref({})
 const commentLikeMap = ref({})
 
+const showReportForm = ref(false)
+const reportTarget = ref({ targetType: 0, targetId: null })
+const reportReason = ref('')
+const reportDetail = ref('')
+const reportLoading = ref(false)
+const reportError = ref('')
+const reportSuccess = ref('')
+const reportSectionRef = ref(null)
+const reportManual = ref(false)
+
+const reportReasons = [
+  '不实信息',
+  '骚扰辱骂',
+  '色情低俗',
+  '违规广告',
+  '侵犯隐私',
+  '其他',
+]
+
 const isOwner = computed(() => {
   if (!currentUser.value || !detail.value) return false
   return Number(currentUser.value.id) === Number(detail.value.userId)
@@ -515,6 +534,58 @@ const toggleCommentLike = async (comment) => {
   }
 }
 
+const prepareReport = (targetType, targetId) => {
+  reportError.value = ''
+  reportSuccess.value = ''
+  reportReason.value = ''
+  reportDetail.value = ''
+  reportTarget.value = { targetType, targetId }
+  reportManual.value = false
+  showReportForm.value = true
+  if (reportSectionRef.value) {
+    reportSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+const submitReport = async () => {
+  reportError.value = ''
+  reportSuccess.value = ''
+  if (!reportTarget.value.targetId || reportTarget.value.targetType === null) {
+    reportError.value = '请选择举报对象。'
+    return
+  }
+  if (!reportReason.value.trim()) {
+    reportError.value = '请选择举报原因。'
+    return
+  }
+  reportLoading.value = true
+  try {
+    const res = await apiFetch('/api/reports', {
+      method: 'POST',
+      body: JSON.stringify({
+        targetType: reportTarget.value.targetType,
+        targetId: reportTarget.value.targetId,
+        reason: reportReason.value.trim(),
+        detail: reportDetail.value.trim() || null,
+      }),
+    })
+    if (res.status === 401) {
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      reportError.value = data.message || '提交举报失败。'
+      return
+    }
+    reportSuccess.value = '举报已提交，我们会尽快处理。'
+  } catch (err) {
+    reportError.value = '网络错误，无法提交举报。'
+  } finally {
+    reportLoading.value = false
+  }
+}
+
 watch(() => route.params.id, () => {
   liked.value = false
   favorited.value = false
@@ -522,6 +593,11 @@ watch(() => route.params.id, () => {
   replyMap.value = {}
   replyDrafts.value = {}
   commentLikeMap.value = {}
+  showReportForm.value = false
+  reportTarget.value = { targetType: 0, targetId: null }
+  reportReason.value = ''
+  reportDetail.value = ''
+  reportManual.value = false
   loadDetail()
 })
 
@@ -571,6 +647,7 @@ onMounted(() => {
               {{ favorited ? '已收藏' : '收藏' }}
             </button>
             <button class="ghost-btn" type="button" @click="sharePost">分享</button>
+            <button class="ghost-btn" type="button" @click="prepareReport(0, detail.id)">举报内容</button>
             <button
               v-if="!isOwner"
               class="ghost-btn"
@@ -578,6 +655,14 @@ onMounted(() => {
               @click="toggleFollow"
             >
               {{ following ? '取消关注' : '关注作者' }}
+            </button>
+            <button
+              v-if="!isOwner"
+              class="ghost-btn"
+              type="button"
+              @click="prepareReport(2, detail.userId)"
+            >
+              举报作者
             </button>
           </div>
         </div>
@@ -641,6 +726,7 @@ onMounted(() => {
               <button class="ghost-btn" type="button" @click="toggleReplies(item.id)">
                 {{ replyMap[item.id]?.expanded ? '收起回复' : '查看回复' }}
               </button>
+              <button class="ghost-btn" type="button" @click="prepareReport(1, item.id)">举报</button>
               <button
                 v-if="currentUser?.id === item.userId"
                 class="ghost-btn danger"
@@ -666,6 +752,7 @@ onMounted(() => {
                   <button class="ghost-btn" type="button" @click="toggleCommentLike(reply)">
                     赞 {{ reply.likeCount ?? 0 }}
                   </button>
+                  <button class="ghost-btn" type="button" @click="prepareReport(1, reply.id)">举报</button>
                   <button
                     v-if="currentUser?.id === reply.userId"
                     class="ghost-btn danger"
@@ -703,6 +790,69 @@ onMounted(() => {
         >
           下一页
         </button>
+      </div>
+    </section>
+
+    <section ref="reportSectionRef" class="profile-section">
+      <div class="profile-header">
+        <div>
+          <h2>举报反馈</h2>
+          <p>如果内容或用户违规，请提交举报说明。</p>
+        </div>
+        <button class="ghost-btn" type="button" @click="showReportForm = !showReportForm">
+          {{ showReportForm ? '收起' : '展开' }}
+        </button>
+      </div>
+      <div v-if="showReportForm" class="report-form">
+        <div v-if="reportTarget.targetId && !reportManual" class="report-hint">
+          已自动填入举报对象：{{ reportTarget.targetType === 0 ? '内容' : reportTarget.targetType === 1 ? '评论' : '用户' }} #{{ reportTarget.targetId }}
+        </div>
+        <div class="grid-2">
+          <label class="field">
+            <span>举报对象类型</span>
+            <select v-model.number="reportTarget.targetType" :disabled="reportTarget.targetId && !reportManual">
+              <option :value="0">内容</option>
+              <option :value="1">评论</option>
+              <option :value="2">用户</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>对象 ID</span>
+            <input
+              v-model="reportTarget.targetId"
+              type="number"
+              placeholder="输入对象 ID"
+              :readonly="reportTarget.targetId && !reportManual"
+            />
+          </label>
+        </div>
+        <div class="report-toggle">
+          <button
+            class="ghost-btn"
+            type="button"
+            @click="reportManual = !reportManual"
+          >
+            {{ reportManual ? '使用自动对象' : '手动填写' }}
+          </button>
+        </div>
+        <label class="field">
+          <span>举报原因</span>
+          <select v-model="reportReason">
+            <option value="">请选择原因</option>
+            <option v-for="item in reportReasons" :key="item" :value="item">{{ item }}</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>补充说明（可选）</span>
+          <textarea v-model="reportDetail" rows="3" placeholder="可填写更多描述"></textarea>
+        </label>
+        <div class="profile-actions">
+          <button class="primary-btn" type="button" :disabled="reportLoading" @click="submitReport">
+            {{ reportLoading ? '提交中...' : '提交举报' }}
+          </button>
+        </div>
+        <p v-if="reportError" class="form-alert error">{{ reportError }}</p>
+        <p v-if="reportSuccess" class="form-alert success">{{ reportSuccess }}</p>
       </div>
     </section>
 

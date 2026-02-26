@@ -4,8 +4,10 @@ import com.school.social.common.ApiResponse;
 import com.school.social.common.PageResponse;
 import com.school.social.dto.interaction.CommentCreateRequest;
 import com.school.social.entity.Comment;
+import com.school.social.entity.Notification;
 import com.school.social.entity.Post;
 import com.school.social.mapper.CommentMapper;
+import com.school.social.mapper.NotificationMapper;
 import com.school.social.mapper.PostMapper;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,11 +26,19 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/comments")
 public class CommentController {
+    private static final int NOTIFY_COMMENT = 1;
+    private static final int NOTIFY_REPLY = 2;
+    private static final int REF_POST = 0;
+    private static final int REF_COMMENT = 1;
+
     @Resource
     private CommentMapper commentMapper;
 
     @Resource
     private PostMapper postMapper;
+
+    @Resource
+    private NotificationMapper notificationMapper;
 
     @PostMapping
     public ApiResponse<Comment> create(@RequestBody CommentCreateRequest request,
@@ -64,6 +74,7 @@ public class CommentController {
         comment.setCreatedAt(LocalDateTime.now());
         commentMapper.insert(comment);
         postMapper.increaseCommentCount(request.getPostId());
+        createCommentNotification(userId, request, post);
         return ApiResponse.success(comment);
     }
 
@@ -105,6 +116,38 @@ public class CommentController {
         commentMapper.deleteById(id);
         postMapper.decreaseCommentCountBy(existing.getPostId(), removed);
         return ApiResponse.success(null);
+    }
+
+    private void createCommentNotification(Long actorId, CommentCreateRequest request, Post post) {
+        if (request.getParentId() != null) {
+            Comment parent = commentMapper.selectById(request.getParentId());
+            if (parent != null && parent.getUserId() != null && !parent.getUserId().equals(actorId)) {
+                Notification notification = new Notification();
+                notification.setUserId(parent.getUserId());
+                notification.setType(NOTIFY_REPLY);
+                notification.setTitle("收到回复");
+                notification.setContent("有人回复了你的评论");
+                notification.setRefType(REF_COMMENT);
+                notification.setRefId(parent.getId());
+                notification.setIsRead(0);
+                notification.setCreatedAt(LocalDateTime.now());
+                notificationMapper.insert(notification);
+            }
+            return;
+        }
+        if (post.getUserId() == null || post.getUserId().equals(actorId)) {
+            return;
+        }
+        Notification notification = new Notification();
+        notification.setUserId(post.getUserId());
+        notification.setType(NOTIFY_COMMENT);
+        notification.setTitle("收到评论");
+        notification.setContent("有人评论了你的内容");
+        notification.setRefType(REF_POST);
+        notification.setRefId(post.getId());
+        notification.setIsRead(0);
+        notification.setCreatedAt(LocalDateTime.now());
+        notificationMapper.insert(notification);
     }
 }
 

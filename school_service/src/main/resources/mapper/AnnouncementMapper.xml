@@ -41,5 +41,25 @@
     <select id="selectAll" resultType="com.school.social.entity.Announcement">
         SELECT id, title, content, status, start_at, end_at, created_at FROM announcements
     </select>
+    <select id="selectPaged" resultType="com.school.social.entity.Announcement">
+        SELECT id, title, content, status, start_at, end_at, created_at
+        FROM announcements
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(1)
+        FROM announcements
+        <where>
+            <if test="status != null">
+                status = #{status}
+            </if>
+        </where>
+    </select>
 
 </mapper>
