@@ -7,6 +7,11 @@ import PostCreateView from '../views/PostCreateView.vue'
 import PostDetailView from '../views/PostDetailView.vue'
 import PostEditView from '../views/PostEditView.vue'
 import SocialView from '../views/SocialView.vue'
+import AdminHomeView from '../views/AdminHomeView.vue'
+import AdminReportsView from '../views/AdminReportsView.vue'
+import AdminOpsView from '../views/AdminOpsView.vue'
+import AdminStatsView from '../views/AdminStatsView.vue'
+import AdminAuditView from '../views/AdminAuditView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -55,7 +60,42 @@ const router = createRouter({
       name: 'social',
       component: SocialView,
     },
+    {
+      path: '/admin',
+      name: 'admin-home',
+      component: AdminHomeView,
+    },
+    {
+      path: '/admin/audit',
+      name: 'admin-audit',
+      component: AdminAuditView,
+    },
+    {
+      path: '/admin/reports',
+      name: 'admin-reports',
+      component: AdminReportsView,
+    },
+    {
+      path: '/admin/ops',
+      name: 'admin-ops',
+      component: AdminOpsView,
+    },
+    {
+      path: '/admin/stats',
+      name: 'admin-stats',
+      component: AdminStatsView,
+    },
   ],
+})
+
+router.beforeEach((to) => {
+  if (to.path.startsWith('/admin')) {
+    const role = localStorage.getItem('auth_role')
+    if (role !== 'admin') {
+      return '/home'
+    }
+  }
+  return true
 })
 
 export default router

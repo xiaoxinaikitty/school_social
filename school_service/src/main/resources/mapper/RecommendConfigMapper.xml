@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.RecommendConfigMapper">
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.RecommendConfigEntity">
+        SELECT id,
+               enable_hot,
+               enable_follow,
+               enable_tag,
+               weight_hot,
+               weight_time,
+               weight_quality,
+               weight_tag,
+               weight_follow,
+               updated_at
+        FROM recommend_config
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.school.social.entity.RecommendConfigEntity">
+        INSERT INTO recommend_config
+        (id, enable_hot, enable_follow, enable_tag, weight_hot, weight_time, weight_quality, weight_tag, weight_follow, updated_at)
+        VALUES
+        (#{id}, #{enableHot}, #{enableFollow}, #{enableTag}, #{weightHot}, #{weightTime}, #{weightQuality}, #{weightTag}, #{weightFollow}, #{updatedAt})
+    </insert>
+
+    <update id="updateById" parameterType="com.school.social.entity.RecommendConfigEntity">
+        UPDATE recommend_config
+        <set>
+            <if test="enableHot != null">enable_hot = #{enableHot},</if>
+            <if test="enableFollow != null">enable_follow = #{enableFollow},</if>
+            <if test="enableTag != null">enable_tag = #{enableTag},</if>
+            <if test="weightHot != null">weight_hot = #{weightHot},</if>
+            <if test="weightTime != null">weight_time = #{weightTime},</if>
+            <if test="weightQuality != null">weight_quality = #{weightQuality},</if>
+            <if test="weightTag != null">weight_tag = #{weightTag},</if>
+            <if test="weightFollow != null">weight_follow = #{weightFollow},</if>
+            <if test="updatedAt != null">updated_at = #{updatedAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+</mapper>

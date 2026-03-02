@@ -7,13 +7,17 @@ import com.school.social.dto.post.PostDetailResponse;
 import com.school.social.dto.post.PostMediaRequest;
 import com.school.social.dto.post.PostUpdateRequest;
 import com.school.social.dto.interaction.PostStatsResponse;
+import com.school.social.entity.Role;
+import com.school.social.entity.UserRole;
 import com.school.social.entity.Post;
 import com.school.social.entity.PostMedia;
 import com.school.social.entity.PostTag;
 import com.school.social.mapper.PostMapper;
 import com.school.social.mapper.PostMediaMapper;
 import com.school.social.mapper.PostTagMapper;
+import com.school.social.mapper.RoleMapper;
 import com.school.social.mapper.TagMapper;
+import com.school.social.mapper.UserRoleMapper;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,6 +52,12 @@ public class PostController {
 
     @Resource
     private TagMapper tagMapper;
+
+    @Resource
+    private RoleMapper roleMapper;
+
+    @Resource
+    private UserRoleMapper userRoleMapper;
 
     @PostMapping
     public ApiResponse<PostDetailResponse> create(@Validated @RequestBody PostCreateRequest request,
@@ -143,10 +153,16 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<PostDetailResponse> detail(@PathVariable Long id) {
+    public ApiResponse<PostDetailResponse> detail(@PathVariable Long id, HttpServletRequest httpRequest) {
         Post existing = postMapper.selectById(id);
         if (existing == null) {
             return ApiResponse.fail("内容不存在");
+        }
+        if (existing.getStatus() == null || existing.getStatus() != 1) {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            if (userId == null || (!userId.equals(existing.getUserId()) && !isAdmin(userId))) {
+                return ApiResponse.fail("内容未审核通过");
+            }
         }
         return ApiResponse.success(buildDetail(id));
     }
@@ -158,8 +174,12 @@ public class PostController {
         int safePage = clampPage(page);
         int safeSize = clampSize(size);
         int offset = (safePage - 1) * safeSize;
-        List<Post> list = postMapper.selectPaged(status, offset, safeSize);
-        long total = postMapper.countByStatus(status);
+        Integer queryStatus = status;
+        if (queryStatus == null) {
+            queryStatus = 1;
+        }
+        List<Post> list = postMapper.selectPaged(queryStatus, offset, safeSize);
+        long total = postMapper.countByStatus(queryStatus);
         return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
     }
 
@@ -253,10 +273,16 @@ public class PostController {
     }
 
     @GetMapping("/{id}/stats")
-    public ApiResponse<PostStatsResponse> stats(@PathVariable Long id) {
+    public ApiResponse<PostStatsResponse> stats(@PathVariable Long id, HttpServletRequest httpRequest) {
         Post post = postMapper.selectById(id);
         if (post == null) {
             return ApiResponse.fail("内容不存在");
+        }
+        if (post.getStatus() == null || post.getStatus() != 1) {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            if (userId == null || (!userId.equals(post.getUserId()) && !isAdmin(userId))) {
+                return ApiResponse.fail("内容未审核通过");
+            }
         }
         PostStatsResponse resp = new PostStatsResponse();
         resp.setPostId(post.getId());
@@ -344,5 +370,17 @@ public class PostController {
 
     private int clampSize(int size) {
         return Math.min(Math.max(size, 1), 50);
+    }
+
+    private boolean isAdmin(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        Role role = roleMapper.selectByName("admin");
+        if (role == null) {
+            return false;
+        }
+        UserRole link = userRoleMapper.selectByPk(userId, role.getId());
+        return link != null;
     }
 }

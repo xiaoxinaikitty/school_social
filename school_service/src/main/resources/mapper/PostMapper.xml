@@ -119,7 +119,7 @@
                like_count, comment_count, favorite_count, view_count, quality_score,
                is_pinned, is_featured, created_at, updated_at, published_at
         FROM posts
-        WHERE status IN (0, 1)
+        WHERE status = 1
         ORDER BY IFNULL(is_pinned, 0) DESC,
                  IFNULL(is_featured, 0) DESC,
                  IFNULL(quality_score, 0) DESC,
@@ -127,7 +127,7 @@
         LIMIT #{size} OFFSET #{offset}
     </select>
     <select id="countRecommend" resultType="int">
-        SELECT COUNT(1) FROM posts WHERE status IN (0, 1)
+        SELECT COUNT(1) FROM posts WHERE status = 1
     </select>
 
     <select id="selectLatestPaged" resultType="com.school.social.entity.Post">
@@ -135,12 +135,12 @@
                like_count, comment_count, favorite_count, view_count, quality_score,
                is_pinned, is_featured, created_at, updated_at, published_at
         FROM posts
-        WHERE status IN (0, 1)
+        WHERE status = 1
         ORDER BY created_at DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
     <select id="countLatest" resultType="int">
-        SELECT COUNT(1) FROM posts WHERE status IN (0, 1)
+        SELECT COUNT(1) FROM posts WHERE status = 1
     </select>
 
     <select id="selectHotPaged" resultType="com.school.social.entity.Post">
@@ -148,14 +148,14 @@
                like_count, comment_count, favorite_count, view_count, quality_score,
                is_pinned, is_featured, created_at, updated_at, published_at
         FROM posts
-        WHERE status IN (0, 1)
+        WHERE status = 1
         ORDER BY (IFNULL(like_count, 0) + IFNULL(comment_count, 0) +
                   IFNULL(favorite_count, 0) + IFNULL(view_count, 0)) DESC,
                  created_at DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
     <select id="countHot" resultType="int">
-        SELECT COUNT(1) FROM posts WHERE status IN (0, 1)
+        SELECT COUNT(1) FROM posts WHERE status = 1
     </select>
 
     <select id="selectByTagPaged" resultType="com.school.social.entity.Post">
@@ -166,7 +166,7 @@
         FROM posts p
         INNER JOIN post_tags pt ON p.id = pt.post_id
         WHERE pt.tag_id = #{tagId}
-          AND p.status IN (0, 1)
+          AND p.status = 1
         ORDER BY p.created_at DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
@@ -175,7 +175,7 @@
         FROM posts p
         INNER JOIN post_tags pt ON p.id = pt.post_id
         WHERE pt.tag_id = #{tagId}
-          AND p.status IN (0, 1)
+          AND p.status = 1
     </select>
 
     <select id="selectByFolloweePaged" resultType="com.school.social.entity.Post">
@@ -186,7 +186,7 @@
         FROM posts p
         INNER JOIN follows f ON f.followee_id = p.user_id
         WHERE f.follower_id = #{userId}
-          AND p.status IN (0, 1)
+          AND p.status = 1
         ORDER BY p.created_at DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
@@ -195,7 +195,7 @@
         FROM posts p
         INNER JOIN follows f ON f.followee_id = p.user_id
         WHERE f.follower_id = #{userId}
-          AND p.status IN (0, 1)
+          AND p.status = 1
     </select>
 
     <select id="searchPaged" resultType="com.school.social.entity.Post">
@@ -208,7 +208,7 @@
             INNER JOIN post_tags pt ON p.id = pt.post_id
         </if>
         <where>
-            p.status IN (0, 1)
+            p.status = 1
             <if test="keyword != null and keyword != ''">
                 AND (p.title LIKE CONCAT('%', #{keyword}, '%')
                 OR p.content LIKE CONCAT('%', #{keyword}, '%'))
@@ -227,7 +227,7 @@
             INNER JOIN post_tags pt ON p.id = pt.post_id
         </if>
         <where>
-            p.status IN (0, 1)
+            p.status = 1
             <if test="keyword != null and keyword != ''">
                 AND (p.title LIKE CONCAT('%', #{keyword}, '%')
                 OR p.content LIKE CONCAT('%', #{keyword}, '%'))
@@ -250,7 +250,7 @@
             #{tagId}
         </foreach>
           AND p.id != #{excludeId}
-          AND p.status IN (0, 1)
+          AND p.status = 1
         GROUP BY p.id
         ORDER BY COUNT(1) DESC, p.created_at DESC
         LIMIT #{limit}

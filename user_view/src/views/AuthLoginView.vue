@@ -33,7 +33,8 @@ const submit = async () => {
     if (loginType.value && loginType.value !== 'auto') {
       payload.loginType = loginType.value
     }
-    const res = await apiFetch('/api/auth/login', {
+    const endpoint = role.value === 'admin' ? '/api/auth/admin/login' : '/api/auth/login'
+    const res = await apiFetch(endpoint, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
@@ -53,7 +54,7 @@ const submit = async () => {
       ? '管理员登录成功，已保存登录凭证。'
       : '登录成功，已保存登录凭证。'
     setTimeout(() => {
-      router.push('/home')
+      router.push(role.value === 'admin' ? '/admin' : '/home')
     }, 300)
   } catch (error) {
     error.value = '网络错误，请稍后再试。'

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.StatsMapper">
+    <select id="countUsers" resultType="int">
+        SELECT COUNT(1) FROM users
+    </select>
+    <select id="countPosts" resultType="int">
+        SELECT COUNT(1) FROM posts WHERE status != 3
+    </select>
+    <select id="countLikes" resultType="int">
+        SELECT COUNT(1) FROM likes
+    </select>
+    <select id="countComments" resultType="int">
+        SELECT COUNT(1) FROM comments
+    </select>
+    <select id="countFavorites" resultType="int">
+        SELECT COUNT(1) FROM favorites
+    </select>
+    <select id="countShares" resultType="int">
+        SELECT COUNT(1) FROM behavior_logs WHERE action_type = 4
+    </select>
+
+    <select id="countUsersSince" resultType="int">
+        SELECT COUNT(1) FROM users WHERE created_at >= #{start}
+    </select>
+    <select id="countPostsSince" resultType="int">
+        SELECT COUNT(1) FROM posts WHERE created_at >= #{start} AND status != 3
+    </select>
+    <select id="countLikesSince" resultType="int">
+        SELECT COUNT(1) FROM likes WHERE created_at >= #{start}
+    </select>
+    <select id="countCommentsSince" resultType="int">
+        SELECT COUNT(1) FROM comments WHERE created_at >= #{start}
+    </select>
+    <select id="countFavoritesSince" resultType="int">
+        SELECT COUNT(1) FROM favorites WHERE created_at >= #{start}
+    </select>
+    <select id="countSharesSince" resultType="int">
+        SELECT COUNT(1) FROM behavior_logs WHERE action_type = 4 AND created_at >= #{start}
+    </select>
+
+    <select id="countActiveUsersSince" resultType="int">
+        SELECT COUNT(DISTINCT user_id) FROM (
+            SELECT user_id FROM posts WHERE created_at >= #{start}
+            UNION ALL
+            SELECT user_id FROM likes WHERE created_at >= #{start}
+            UNION ALL
+            SELECT user_id FROM comments WHERE created_at >= #{start}
+            UNION ALL
+            SELECT user_id FROM favorites WHERE created_at >= #{start}
+            UNION ALL
+            SELECT user_id FROM behavior_logs WHERE action_type = 4 AND created_at >= #{start}
+            UNION ALL
+            SELECT follower_id AS user_id FROM follows WHERE created_at >= #{start}
+        ) t
+    </select>
+
+    <select id="selectNewUsers" resultType="com.school.social.dto.admin.StatCount">
+        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS statDate,
+               COUNT(1) AS count
+        FROM users
+        WHERE created_at >= #{start} AND created_at &lt; #{end}
+        GROUP BY statDate
+        ORDER BY statDate
+    </select>
+
+    <select id="selectActiveUsers" resultType="com.school.social.dto.admin.StatCount">
+        SELECT activity_date AS statDate,
+               COUNT(DISTINCT user_id) AS count
+        FROM (
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM posts
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM likes
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM comments
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM favorites
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM behavior_logs
+            WHERE action_type = 4 AND created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, follower_id AS user_id
+            FROM follows
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+        ) t
+        GROUP BY activity_date
+        ORDER BY activity_date
+    </select>
+
+    <select id="selectRetention1d" resultType="com.school.social.dto.admin.RetentionCount">
+        SELECT activity_date AS statDate,
+               COUNT(DISTINCT u.id) AS retained
+        FROM (
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM posts
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM likes
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM comments
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM favorites
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM behavior_logs
+            WHERE action_type = 4 AND created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, follower_id AS user_id
+            FROM follows
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+        ) a
+        JOIN users u ON u.id = a.user_id
+        WHERE DATE(u.created_at) = DATE_SUB(STR_TO_DATE(a.activity_date, '%Y-%m-%d'), INTERVAL 1 DAY)
+        GROUP BY activity_date
+        ORDER BY activity_date
+    </select>
+
+    <select id="selectRetention7d" resultType="com.school.social.dto.admin.RetentionCount">
+        SELECT activity_date AS statDate,
+               COUNT(DISTINCT u.id) AS retained
+        FROM (
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM posts
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM likes
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM comments
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM favorites
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, user_id
+            FROM behavior_logs
+            WHERE action_type = 4 AND created_at >= #{start} AND created_at &lt; #{end}
+            UNION ALL
+            SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS activity_date, follower_id AS user_id
+            FROM follows
+            WHERE created_at >= #{start} AND created_at &lt; #{end}
+        ) a
+        JOIN users u ON u.id = a.user_id
+        WHERE DATE(u.created_at) = DATE_SUB(STR_TO_DATE(a.activity_date, '%Y-%m-%d'), INTERVAL 7 DAY)
+        GROUP BY activity_date
+        ORDER BY activity_date
+    </select>
+
+    <select id="selectPosts" resultType="com.school.social.dto.admin.StatCount">
+        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS statDate,
+               COUNT(1) AS count
+        FROM posts
+        WHERE created_at >= #{start} AND created_at &lt; #{end} AND status != 3
+        GROUP BY statDate
+        ORDER BY statDate
+    </select>
+
+    <select id="selectLikes" resultType="com.school.social.dto.admin.StatCount">
+        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS statDate,
+               COUNT(1) AS count
+        FROM likes
+        WHERE created_at >= #{start} AND created_at &lt; #{end}
+        GROUP BY statDate
+        ORDER BY statDate
+    </select>
+
+    <select id="selectComments" resultType="com.school.social.dto.admin.StatCount">
+        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS statDate,
+               COUNT(1) AS count
+        FROM comments
+        WHERE created_at >= #{start} AND created_at &lt; #{end}
+        GROUP BY statDate
+        ORDER BY statDate
+    </select>
+
+    <select id="selectFavorites" resultType="com.school.social.dto.admin.StatCount">
+        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS statDate,
+               COUNT(1) AS count
+        FROM favorites
+        WHERE created_at >= #{start} AND created_at &lt; #{end}
+        GROUP BY statDate
+        ORDER BY statDate
+    </select>
+
+    <select id="selectShares" resultType="com.school.social.dto.admin.StatCount">
+        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS statDate,
+               COUNT(1) AS count
+        FROM behavior_logs
+        WHERE action_type = 4 AND created_at >= #{start} AND created_at &lt; #{end}
+        GROUP BY statDate
+        ORDER BY statDate
+    </select>
+</mapper>
+
+

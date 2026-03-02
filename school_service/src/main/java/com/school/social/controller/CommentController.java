@@ -6,9 +6,13 @@ import com.school.social.dto.interaction.CommentCreateRequest;
 import com.school.social.entity.Comment;
 import com.school.social.entity.Notification;
 import com.school.social.entity.Post;
+import com.school.social.entity.Role;
+import com.school.social.entity.UserRole;
 import com.school.social.mapper.CommentMapper;
 import com.school.social.mapper.NotificationMapper;
 import com.school.social.mapper.PostMapper;
+import com.school.social.mapper.RoleMapper;
+import com.school.social.mapper.UserRoleMapper;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,6 +44,12 @@ public class CommentController {
     @Resource
     private NotificationMapper notificationMapper;
 
+    @Resource
+    private RoleMapper roleMapper;
+
+    @Resource
+    private UserRoleMapper userRoleMapper;
+
     @PostMapping
     public ApiResponse<Comment> create(@RequestBody CommentCreateRequest request,
                                        HttpServletRequest httpRequest) {
@@ -54,6 +64,11 @@ public class CommentController {
         Post post = postMapper.selectById(request.getPostId());
         if (post == null) {
             return ApiResponse.fail("内容不存在");
+        }
+        if (post.getStatus() == null || post.getStatus() != 1) {
+            if (!isOwnerOrAdmin(userId, post.getUserId())) {
+                return ApiResponse.fail("内容未审核通过");
+            }
         }
         if (request.getParentId() != null) {
             Comment parent = commentMapper.selectById(request.getParentId());
@@ -82,7 +97,18 @@ public class CommentController {
     public ApiResponse<PageResponse<Comment>> list(@RequestParam Long postId,
                                                    @RequestParam(required = false) Long parentId,
                                                    @RequestParam(defaultValue = "1") int page,
-                                                   @RequestParam(defaultValue = "10") int size) {
+                                                   @RequestParam(defaultValue = "10") int size,
+                                                   HttpServletRequest httpRequest) {
+        Post post = postMapper.selectById(postId);
+        if (post == null) {
+            return ApiResponse.fail("内容不存在");
+        }
+        if (post.getStatus() == null || post.getStatus() != 1) {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            if (!isOwnerOrAdmin(userId, post.getUserId())) {
+                return ApiResponse.fail("内容未审核通过");
+            }
+        }
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 50);
         int offset = (safePage - 1) * safeSize;
@@ -148,6 +174,21 @@ public class CommentController {
         notification.setIsRead(0);
         notification.setCreatedAt(LocalDateTime.now());
         notificationMapper.insert(notification);
+    }
+
+    private boolean isOwnerOrAdmin(Long userId, Long ownerId) {
+        if (userId == null) {
+            return false;
+        }
+        if (ownerId != null && ownerId.equals(userId)) {
+            return true;
+        }
+        Role role = roleMapper.selectByName("admin");
+        if (role == null) {
+            return false;
+        }
+        UserRole link = userRoleMapper.selectByPk(userId, role.getId());
+        return link != null;
     }
 }
 

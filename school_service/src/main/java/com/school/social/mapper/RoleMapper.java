@@ -1,6 +1,7 @@
 package com.school.social.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import com.school.social.entity.Role;
 
@@ -11,4 +12,6 @@ public interface RoleMapper {
     int deleteById(Long id);
     Role selectById(Long id);
     List<Role> selectAll();
+
+    Role selectByName(@Param("name") String name);
 }

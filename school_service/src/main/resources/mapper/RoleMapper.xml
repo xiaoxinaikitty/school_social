@@ -32,5 +32,8 @@
     <select id="selectAll" resultType="com.school.social.entity.Role">
         SELECT id, name, description, created_at FROM roles
     </select>
+    <select id="selectByName" resultType="com.school.social.entity.Role">
+        SELECT id, name, description, created_at FROM roles WHERE name = #{name} LIMIT 1
+    </select>
 
 </mapper>

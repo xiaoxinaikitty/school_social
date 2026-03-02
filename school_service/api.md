@@ -100,6 +100,20 @@
 }
 ```
 
+### 1.2.1 管理员登录
+- **URL**: `POST /api/auth/admin/login`
+- **说明**: 仅允许管理员账号登录，非管理员返回失败
+- **请求体**: 同“用户登录”
+- **响应**: 同“用户登录”
+- **失败示例**:
+```json
+{
+  "code": -1,
+  "message": "非管理员账号",
+  "data": null
+}
+```
+
 ### 1.3 退出登录
 - **URL**: `POST /api/auth/logout`
 - **说明**: 退出登录（当前实现为前端清理本地凭证）
@@ -574,4 +588,245 @@
 - **参数**: `page`（默认 1），`size`（默认 10，最大 50），`status`（可选）
 - **status**: `0`待处理，`1`已处理
 - **响应**: `PageResponse<Report>`
+
+## 9. 管理员内容审核
+
+### 9.1 待审/已审内容列表
+- **URL**: `GET /api/admin/posts`
+- **说明**: 管理员查看内容审核列表
+- **鉴权**: 需要管理员账号 Token
+- **参数**: `page`（默认 1），`size`（默认 10，最大 50），`status`（可选，默认 0）
+- **status**: `0`待审，`1`通过，`2`驳回
+- **响应**: `PageResponse<Post>`
+
+### 9.2 审核内容
+- **URL**: `PUT /api/admin/posts/{id}/review`
+- **说明**: 管理员审核内容
+- **鉴权**: 需要管理员账号 Token
+- **请求体**（JSON）:
+```json
+{
+  "decision": 1,
+  "note": "内容合规"
+}
+```
+- **decision**: `1`通过，`2`驳回
+- **响应**:
+```json
+{ "code": 0, "message": "success", "data": { "id": 1001, "status": 1 } }
+```
+
+## 10. 管理员举报处理
+
+### 10.1 举报队列
+- **URL**: `GET /api/reports/admin`
+- **说明**: 管理员查看全站举报列表
+- **鉴权**: 需要管理员账号 Token
+- **参数**: `page`，`size`，`status`（可选，0=待处理，1=已处理）
+- **响应**: `PageResponse<Report>`
+
+### 10.2 处理举报
+- **URL**: `PUT /api/reports/admin/{id}/handle`
+- **说明**: 处理举报并填写结果
+- **鉴权**: 需要管理员账号 Token
+- **请求体**（JSON）:
+```json
+{
+  "decision": 1,
+  "result": "内容已下架并警告用户"
+}
+```
+- **响应**:
+```json
+{ "code": 0, "message": "success", "data": { "id": 1, "status": 1 } }
+```
+
+## 11. 管理员运营配置
+
+### 11.1 标签管理（列表）
+- **URL**: `GET /api/admin/tags`
+- **说明**: 管理员获取标签列表
+- **鉴权**: 需要管理员账号 Token
+- **参数**: `type`（可选），`status`（可选）
+- **响应**: `List<Tag>`
+
+### 11.2 标签管理（新增）
+- **URL**: `POST /api/admin/tags`
+- **说明**: 新增标签
+- **鉴权**: 需要管理员账号 Token
+- **请求体**（JSON）:
+```json
+{ "name": "学习", "type": 0, "status": 1 }
+```
+- **响应**: `Tag`
+
+### 11.3 标签管理（更新）
+- **URL**: `PUT /api/admin/tags/{id}`
+- **说明**: 更新标签
+- **鉴权**: 需要管理员账号 Token
+- **请求体**（JSON）:
+```json
+{ "name": "学习分享", "type": 0, "status": 1 }
+```
+- **响应**: `Tag`
+
+### 11.4 标签管理（删除）
+- **URL**: `DELETE /api/admin/tags/{id}`
+- **说明**: 删除标签
+- **鉴权**: 需要管理员账号 Token
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 11.5 公告管理（列表）
+- **URL**: `GET /api/admin/announcements`
+- **说明**: 管理员获取公告列表
+- **鉴权**: 需要管理员账号 Token
+- **参数**: `page`，`size`，`status`（可选）
+- **响应**: `PageResponse<Announcement>`
+
+### 11.6 公告发布
+- **URL**: `POST /api/admin/announcements`
+- **说明**: 发布公告
+- **鉴权**: 需要管理员账号 Token
+- **请求体**（JSON）:
+```json
+{ "title": "系统维护", "content": "今晚 22:00 维护", "status": 0 }
+```
+- **响应**: `Announcement`
+
+### 11.7 公告更新
+- **URL**: `PUT /api/admin/announcements/{id}`
+- **说明**: 更新公告
+- **鉴权**: 需要管理员账号 Token
+- **请求体**（JSON）:
+```json
+{ "title": "系统维护更新", "content": "维护时间调整", "status": 0 }
+```
+- **响应**: `Announcement`
+
+### 11.8 公告删除
+- **URL**: `DELETE /api/admin/announcements/{id}`
+- **说明**: 删除公告
+- **鉴权**: 需要管理员账号 Token
+- **响应**: `{ "code": 0, "message": "success", "data": null }`
+
+### 11.9 置顶/精选
+- **URL**: `PUT /api/admin/posts/{id}/flags`
+- **说明**: 设置内容置顶/精选
+- **鉴权**: 需要管理员账号 Token
+- **请求体**（JSON）:
+```json
+{ "pinned": 1, "featured": 0 }
+```
+- **响应**: `Post`
+
+### 11.10 用户黑名单（封禁/解禁）
+- **URL**: `PUT /api/admin/users/{id}/status`
+- **说明**: 设置用户状态（0 正常，1 封禁）
+- **鉴权**: 需要管理员账号 Token
+- **请求体**（JSON）:
+```json
+{ "status": 1 }
+```
+- **响应**: `User`
+
+### 11.11 推荐配置（读取/更新）
+- **URL**: `GET /api/admin/recommend/config`
+- **说明**: 获取推荐权重与策略开关
+- **鉴权**: 需要管理员账号 Token
+- **响应**: `RecommendConfig`
+
+- **URL**: `PUT /api/admin/recommend/config`
+- **说明**: 更新推荐权重与策略开关（已持久化到数据库）
+- **鉴权**: 需要管理员账号 Token
+- **请求体**（JSON）:
+```json
+{
+  "enableHot": true,
+  "enableFollow": true,
+  "enableTag": true,
+  "weightHot": 0.4,
+  "weightTime": 0.2,
+  "weightQuality": 0.2,
+  "weightTag": 0.1,
+  "weightFollow": 0.1
+}
+```
+- **响应**: `RecommendConfig`
+
+## 12. 管理员数据统计
+
+### 12.1 统计概览
+- **URL**: `GET /api/admin/stats/overview`
+- **说明**: 获取平台整体数据概览（默认统计近 30 天）
+- **鉴权**: 需要管理员账号 Token
+- **参数**: `days`（可选，默认 30，最大 180）
+- **说明补充**:
+  - `activeUsers` 统计口径：当日内发布/点赞/评论/收藏/分享/关注任一行为的去重用户数
+  - `retention1d`/`retention7d` 为比例（0~1），表示前 1/7 天新增用户在当日有活跃行为的留存率
+- **响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "rangeStart": "2026-02-01",
+    "rangeEnd": "2026-02-27",
+    "totalUsers": 120,
+    "totalPosts": 560,
+    "totalInteractions": 3200,
+    "newUsers": 25,
+    "activeUsers": 80,
+    "postCount": 40,
+    "interactionCount": 210,
+    "retention1d": 0.35,
+    "retention7d": 0.12
+  }
+}
+```
+
+### 12.2 用户增长/活跃/留存
+- **URL**: `GET /api/admin/stats/users`
+- **说明**: 获取每日用户增长、活跃与留存曲线
+- **鉴权**: 需要管理员账号 Token
+- **参数**: `days`（可选，默认 30，最大 180）
+- **响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "date": "2026-02-25",
+      "newUsers": 3,
+      "activeUsers": 18,
+      "retention1d": 0.33,
+      "retention7d": 0.10
+    }
+  ]
+}
+```
+
+### 12.3 内容发布量与互动量
+- **URL**: `GET /api/admin/stats/content`
+- **说明**: 获取每日内容发布量与互动量（点赞/评论/收藏/分享）
+- **鉴权**: 需要管理员账号 Token
+- **参数**: `days`（可选，默认 30，最大 180）
+- **响应**:
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "date": "2026-02-25",
+      "postCount": 5,
+      "likeCount": 12,
+      "commentCount": 7,
+      "favoriteCount": 3,
+      "shareCount": 1,
+      "interactionCount": 23
+    }
+  ]
+}
+```
 

@@ -4,8 +4,12 @@ import com.school.social.common.ApiResponse;
 import com.school.social.dto.interaction.FavoriteRequest;
 import com.school.social.entity.Favorite;
 import com.school.social.entity.Post;
+import com.school.social.entity.Role;
+import com.school.social.entity.UserRole;
 import com.school.social.mapper.FavoriteMapper;
 import com.school.social.mapper.PostMapper;
+import com.school.social.mapper.RoleMapper;
+import com.school.social.mapper.UserRoleMapper;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +30,12 @@ public class FavoriteController {
     @Resource
     private PostMapper postMapper;
 
+    @Resource
+    private RoleMapper roleMapper;
+
+    @Resource
+    private UserRoleMapper userRoleMapper;
+
     @PostMapping
     public ApiResponse<Void> add(@RequestBody FavoriteRequest request,
                                  HttpServletRequest httpRequest) {
@@ -40,6 +50,11 @@ public class FavoriteController {
         Post post = postMapper.selectById(postId);
         if (post == null) {
             return ApiResponse.fail("内容不存在");
+        }
+        if (post.getStatus() == null || post.getStatus() != 1) {
+            if (!isOwnerOrAdmin(userId, post.getUserId())) {
+                return ApiResponse.fail("内容未审核通过");
+            }
         }
         Favorite existing = favoriteMapper.selectByUserAndPost(userId, postId);
         if (existing != null) {
@@ -71,6 +86,21 @@ public class FavoriteController {
         favoriteMapper.deleteByUserAndPost(userId, postId);
         postMapper.decreaseFavoriteCount(postId);
         return ApiResponse.success(null);
+    }
+
+    private boolean isOwnerOrAdmin(Long userId, Long ownerId) {
+        if (userId == null) {
+            return false;
+        }
+        if (ownerId != null && ownerId.equals(userId)) {
+            return true;
+        }
+        Role role = roleMapper.selectByName("admin");
+        if (role == null) {
+            return false;
+        }
+        UserRole link = userRoleMapper.selectByPk(userId, role.getId());
+        return link != null;
     }
 }
 

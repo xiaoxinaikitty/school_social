@@ -4,8 +4,12 @@ import com.school.social.common.ApiResponse;
 import com.school.social.dto.interaction.ShareRequest;
 import com.school.social.entity.BehaviorLog;
 import com.school.social.entity.Post;
+import com.school.social.entity.Role;
+import com.school.social.entity.UserRole;
 import com.school.social.mapper.BehaviorLogMapper;
 import com.school.social.mapper.PostMapper;
+import com.school.social.mapper.RoleMapper;
+import com.school.social.mapper.UserRoleMapper;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +31,12 @@ public class ShareController {
     @Resource
     private BehaviorLogMapper behaviorLogMapper;
 
+    @Resource
+    private RoleMapper roleMapper;
+
+    @Resource
+    private UserRoleMapper userRoleMapper;
+
     @PostMapping
     public ApiResponse<Void> share(@RequestBody ShareRequest request,
                                    HttpServletRequest httpRequest) {
@@ -41,6 +51,11 @@ public class ShareController {
         if (post == null) {
             return ApiResponse.fail("内容不存在");
         }
+        if (post.getStatus() == null || post.getStatus() != 1) {
+            if (!isOwnerOrAdmin(userId, post.getUserId())) {
+                return ApiResponse.fail("内容未审核通过");
+            }
+        }
         BehaviorLog log = new BehaviorLog();
         log.setUserId(userId);
         log.setActionType(ACTION_SHARE);
@@ -49,5 +64,20 @@ public class ShareController {
         log.setCreatedAt(LocalDateTime.now());
         behaviorLogMapper.insert(log);
         return ApiResponse.success(null);
+    }
+
+    private boolean isOwnerOrAdmin(Long userId, Long ownerId) {
+        if (userId == null) {
+            return false;
+        }
+        if (ownerId != null && ownerId.equals(userId)) {
+            return true;
+        }
+        Role role = roleMapper.selectByName("admin");
+        if (role == null) {
+            return false;
+        }
+        UserRole link = userRoleMapper.selectByPk(userId, role.getId());
+        return link != null;
     }
 }

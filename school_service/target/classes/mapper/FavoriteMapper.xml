@@ -39,6 +39,7 @@
         FROM favorites f
         JOIN posts p ON f.post_id = p.id
         WHERE f.user_id = #{userId}
+          AND p.status = 1
         ORDER BY f.created_at DESC
     </select>
     <select id="selectFavoritePostsByUserIdPaged" resultType="com.school.social.entity.Post">
@@ -48,11 +49,16 @@
         FROM favorites f
         JOIN posts p ON f.post_id = p.id
         WHERE f.user_id = #{userId}
+          AND p.status = 1
         ORDER BY f.created_at DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
     <select id="countFavoritePostsByUserId" resultType="int">
-        SELECT COUNT(1) FROM favorites WHERE user_id = #{userId}
+        SELECT COUNT(1)
+        FROM favorites f
+        JOIN posts p ON f.post_id = p.id
+        WHERE f.user_id = #{userId}
+          AND p.status = 1
     </select>
     <select id="selectByUserAndPost" resultType="com.school.social.entity.Favorite">
         SELECT id, user_id, post_id, created_at

@@ -20,4 +20,10 @@ public interface ReportMapper {
 
     int countByReporter(@Param("reporterId") Long reporterId,
                         @Param("status") Integer status);
+
+    List<Report> selectAllPaged(@Param("status") Integer status,
+                                @Param("offset") int offset,
+                                @Param("size") int size);
+
+    int countAll(@Param("status") Integer status);
 }

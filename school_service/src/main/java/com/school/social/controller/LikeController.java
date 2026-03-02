@@ -6,10 +6,14 @@ import com.school.social.entity.Comment;
 import com.school.social.entity.Like;
 import com.school.social.entity.Notification;
 import com.school.social.entity.Post;
+import com.school.social.entity.Role;
+import com.school.social.entity.UserRole;
 import com.school.social.mapper.CommentMapper;
 import com.school.social.mapper.LikeMapper;
 import com.school.social.mapper.NotificationMapper;
 import com.school.social.mapper.PostMapper;
+import com.school.social.mapper.RoleMapper;
+import com.school.social.mapper.UserRoleMapper;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,6 +44,12 @@ public class LikeController {
     @Resource
     private NotificationMapper notificationMapper;
 
+    @Resource
+    private RoleMapper roleMapper;
+
+    @Resource
+    private UserRoleMapper userRoleMapper;
+
     @PostMapping
     public ApiResponse<Void> like(@RequestBody LikeRequest request,
                                   HttpServletRequest httpRequest) {
@@ -64,10 +74,21 @@ public class LikeController {
             if (post == null) {
                 return ApiResponse.fail("内容不存在");
             }
+            if (post.getStatus() == null || post.getStatus() != 1) {
+                if (!isOwnerOrAdmin(userId, post.getUserId())) {
+                    return ApiResponse.fail("内容未审核通过");
+                }
+            }
         } else {
             Comment comment = commentMapper.selectById(targetId);
             if (comment == null) {
                 return ApiResponse.fail("评论不存在");
+            }
+            Post post = postMapper.selectById(comment.getPostId());
+            if (post != null && (post.getStatus() == null || post.getStatus() != 1)) {
+                if (!isOwnerOrAdmin(userId, post.getUserId())) {
+                    return ApiResponse.fail("内容未审核通过");
+                }
             }
         }
         Like like = new Like();
@@ -145,6 +166,21 @@ public class LikeController {
         notification.setIsRead(0);
         notification.setCreatedAt(LocalDateTime.now());
         notificationMapper.insert(notification);
+    }
+
+    private boolean isOwnerOrAdmin(Long userId, Long ownerId) {
+        if (userId == null) {
+            return false;
+        }
+        if (ownerId != null && ownerId.equals(userId)) {
+            return true;
+        }
+        Role role = roleMapper.selectByName("admin");
+        if (role == null) {
+            return false;
+        }
+        UserRole link = userRoleMapper.selectByPk(userId, role.getId());
+        return link != null;
     }
 }
 

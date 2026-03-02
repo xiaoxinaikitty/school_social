@@ -228,3 +228,20 @@ CREATE TABLE IF NOT EXISTS recommendation_logs (
   CONSTRAINT fk_rec_user FOREIGN KEY (user_id) REFERENCES users(id),
   CONSTRAINT fk_rec_post FOREIGN KEY (post_id) REFERENCES posts(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS recommend_config (
+  id BIGINT PRIMARY KEY,
+  enable_hot TINYINT NOT NULL DEFAULT 1,
+  enable_follow TINYINT NOT NULL DEFAULT 1,
+  enable_tag TINYINT NOT NULL DEFAULT 1,
+  weight_hot DECIMAL(6,3) NOT NULL DEFAULT 0.400,
+  weight_time DECIMAL(6,3) NOT NULL DEFAULT 0.200,
+  weight_quality DECIMAL(6,3) NOT NULL DEFAULT 0.200,
+  weight_tag DECIMAL(6,3) NOT NULL DEFAULT 0.100,
+  weight_follow DECIMAL(6,3) NOT NULL DEFAULT 0.100,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO recommend_config (id, enable_hot, enable_follow, enable_tag, weight_hot, weight_time, weight_quality, weight_tag, weight_follow)
+VALUES (1, 1, 1, 1, 0.400, 0.200, 0.200, 0.100, 0.100)
+ON DUPLICATE KEY UPDATE id = id;
