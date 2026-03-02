@@ -245,3 +245,9 @@ CREATE TABLE IF NOT EXISTS recommend_config (
 INSERT INTO recommend_config (id, enable_hot, enable_follow, enable_tag, weight_hot, weight_time, weight_quality, weight_tag, weight_follow)
 VALUES (1, 1, 1, 1, 0.400, 0.200, 0.200, 0.100, 0.100)
 ON DUPLICATE KEY UPDATE id = id;
+
+
+
+-- 已存在数据库请执行（仅需一次）
+ALTER TABLE reports ADD COLUMN decision TINYINT AFTER status;
+

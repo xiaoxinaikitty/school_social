@@ -12,6 +12,7 @@ const reportStatus = ref(0)
 const reportLoading = ref(false)
 const reportError = ref('')
 const reportResultMap = ref({})
+const reportDecisionMap = ref({})
 const reportActionError = ref('')
 const reportActionSuccess = ref('')
 
@@ -58,7 +59,7 @@ const handleReport = async (reportId) => {
     const res = await apiFetch(`/api/reports/admin/${reportId}/handle`, {
       method: 'PUT',
       body: JSON.stringify({
-        decision: 1,
+        decision: reportDecisionMap.value[reportId] ?? 1,
         result: reportResultMap.value[reportId] || '已处理',
       }),
     })
@@ -114,11 +115,18 @@ onMounted(() => {
           </div>
           <h4>{{ report.reason }}</h4>
           <p>{{ report.detail || '未填写补充说明' }}</p>
-          <div v-if="report.status === 1 && report.result" class="muted">处理结果：{{ report.result }}</div>
+          <div v-if="report.status === 1" class="muted">处理结果：{{ report.decision === 1 ? '属实' : '不属实' }}，{{ report.result || '已处理' }}</div>
           <div v-else class="report-handle">
             <label class="field">
-              <span>处理结果</span>
-              <input v-model="reportResultMap[report.id]" type="text" placeholder="填写处理结论" />
+              <span>处理结论</span>
+              <select v-model.number="reportDecisionMap[report.id]">
+                <option :value="1">属实</option>
+                <option :value="2">不属实</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>处理说明</span>
+              <input v-model="reportResultMap[report.id]" type="text" placeholder="填写处理说明" />
             </label>
             <button class="ghost-btn" type="button" @click="handleReport(report.id)">处理完成</button>
           </div>
@@ -146,3 +154,6 @@ onMounted(() => {
     </section>
   </div>
 </template>
+
+
+

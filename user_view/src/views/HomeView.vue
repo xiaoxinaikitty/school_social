@@ -32,6 +32,8 @@ const searchKeyword = ref('')
 const searchTagId = ref('')
 
 const unreadCount = ref(0)
+const recommendTotal = ref(0)
+const recommendLoading = ref(false)
 
 const totalPages = computed(() => {
   const pages = Math.ceil(total.value / size.value)
@@ -76,9 +78,28 @@ const activeTagName = computed(() => {
   const match = tags.value.find((item) => item.id === activeTagId.value)
   return match ? match.name : '话题'
 })
+const hotTopicNote = computed(() => {
+  if (!tags.value.length) return '暂无热门话题'
+  const names = tags.value.slice(0, 3).map((item) => item.name)
+  return `热门：${names.join('、')}`
+})
 
 const goDiscover = () => {
   discoverRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+const goRecommend = () => {
+  setFeed('recommend')
+  goDiscover()
+}
+
+const goHotTopics = () => {
+  feedType.value = 'topic'
+  page.value = 1
+  if (!activeTagId.value && tags.value.length) {
+    activeTagId.value = tags.value[0].id
+  }
+  loadFeed()
+  goDiscover()
 }
 
 const logout = async () => {
@@ -112,7 +133,7 @@ const loadTags = async () => {
   tagLoading.value = true
   tagError.value = ''
   try {
-    const res = await apiFetch('/api/tags')
+    const res = await apiFetch('/api/tags?status=1')
     if (res.status === 401) {
       router.push('/login')
       return
@@ -147,6 +168,25 @@ const loadUnreadCount = async () => {
   }
 }
 
+const loadRecommendSummary = async () => {
+  recommendLoading.value = true
+  try {
+    const res = await apiFetch('/api/posts/recommend?page=1&size=1')
+    if (res.status === 401) {
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      return
+    }
+    recommendTotal.value = data.data?.total ?? 0
+  } catch (err) {
+    // ignore
+  } finally {
+    recommendLoading.value = false
+  }
+}
 const loadFeed = async () => {
   feedLoading.value = true
   feedError.value = ''
@@ -265,6 +305,7 @@ onMounted(() => {
   loadTags()
   loadFeed()
   loadUnreadCount()
+  loadRecommendSummary()
 })
 </script>
 
@@ -288,15 +329,27 @@ onMounted(() => {
         </div>
       </div>
       <div class="hero-right">
-        <div class="stat-card">
+        <div
+          class="stat-card link-card"
+          role="button"
+          tabindex="0"
+          @click="goRecommend"
+          @keydown.enter="goRecommend"
+        >
           <p class="stat-label">今日推荐</p>
-          <p class="stat-value">32</p>
-          <p class="stat-note">个性化内容流持续更新</p>
+          <p class="stat-value">{{ recommendLoading ? '...' : recommendTotal }}</p>
+          <p class="stat-note">点击查看推荐流</p>
         </div>
-        <div class="stat-card">
+        <div
+          class="stat-card link-card"
+          role="button"
+          tabindex="0"
+          @click="goHotTopics"
+          @keydown.enter="goHotTopics"
+        >
           <p class="stat-label">热门话题</p>
-          <p class="stat-value">8</p>
-          <p class="stat-note">覆盖社团、学习与校园生活</p>
+          <p class="stat-value">{{ tagLoading ? '...' : tags.length }}</p>
+          <p class="stat-note">{{ hotTopicNote }}</p>
         </div>
         <div class="stat-card link-card" role="button" tabindex="0" @click="router.push('/social')" @keydown.enter="router.push('/social')">
           <p class="stat-label">互动提醒</p>
@@ -421,3 +474,4 @@ onMounted(() => {
 
   </div>
 </template>
+

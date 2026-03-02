@@ -38,7 +38,13 @@ const userStatusId = ref('')
 const userStatus = ref(1)
 const userStatusLoading = ref(false)
 const userStatusMessage = ref('')
-
+const users = ref([])
+const userLoading = ref(false)
+const userError = ref('')
+const userPage = ref(1)
+const userSize = ref(6)
+const userTotal = ref(0)
+const userSearch = ref('')
 const recommendConfig = ref({
   enableHot: true,
   enableFollow: true,
@@ -72,6 +78,10 @@ const filteredApprovedPosts = computed(() => {
   })
 })
 
+const userPages = computed(() => {
+  const pages = Math.ceil(userTotal.value / userSize.value)
+  return pages > 0 ? pages : 1
+})
 const loadTags = async () => {
   tagLoading.value = true
   tagError.value = ''
@@ -345,11 +355,48 @@ const updateUserStatus = async () => {
       return
     }
     userStatusMessage.value = '用户状态已更新。'
+    loadUsers(userPage.value)
   } catch (err) {
     userStatusMessage.value = '网络错误，无法更新。'
   } finally {
     userStatusLoading.value = false
   }
+}
+const loadUsers = async (page = 1) => {
+  userLoading.value = true
+  userError.value = ''
+  try {
+    const params = new URLSearchParams()
+    params.set('page', page)
+    params.set('size', userSize.value)
+    if (userSearch.value.trim()) {
+      params.set('keyword', userSearch.value.trim())
+    }
+    const res = await apiFetch(`/api/admin/users?${params.toString()}`)
+    if (res.status === 401) {
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      userError.value = data.message || '获取用户失败。'
+      return
+    }
+    users.value = data.data?.list || []
+    userTotal.value = data.data?.total ?? 0
+    userPage.value = data.data?.page ?? page
+  } catch (err) {
+    userError.value = '网络错误，无法获取用户。'
+  } finally {
+    userLoading.value = false
+  }
+}
+
+const selectUserForStatus = (user) => {
+  if (!user) return
+  userStatusId.value = user.id
+  userStatus.value = user.status ?? 0
+  userStatusMessage.value = `已选择用户 #${user.id}`
 }
 
 const loadRecommendConfig = async () => {
@@ -401,6 +448,7 @@ onMounted(() => {
   loadAnnouncements()
   loadRecommendConfig()
   loadApprovedPosts()
+  loadUsers()
 })
 </script>
 
@@ -498,7 +546,7 @@ onMounted(() => {
       <div class="profile-header">
         <div>
           <h2>黑名单</h2>
-          <p>封禁/解禁用户账号。</p>
+          <p>搜索用户并进行封禁/解禁。</p>
         </div>
       </div>
       <div class="report-form">
@@ -506,6 +554,50 @@ onMounted(() => {
           <span>用户 ID</span>
           <input v-model="userStatusId" type="number" placeholder="输入用户ID" />
         </label>
+        <label class="field">
+          <span>搜索用户</span>
+          <input v-model="userSearch" type="text" placeholder="输入用户名/邮箱/手机号" />
+        </label>
+        <div class="feed-actions">
+          <button class="ghost-btn" type="button" @click="loadUsers(1)">搜索</button>
+          <button class="ghost-btn" type="button" @click="loadUsers(userPage)">刷新</button>
+        </div>
+        <div v-if="userLoading" class="feed-empty">加载用户中...</div>
+        <div v-else-if="userError" class="form-alert error">{{ userError }}</div>
+        <div v-else-if="users.length" class="feed-grid">
+          <div v-for="user in users" :key="user.id" class="feed-item">
+            <div class="feed-item-top">
+              <span class="feed-label">用户 #{{ user.id }}</span>
+              <span class="status-pill" :class="user.status === 1 ? 'rejected' : 'approved'">
+                {{ user.status === 1 ? '封禁' : '正常' }}
+              </span>
+            </div>
+            <h4>{{ user.username || '未命名用户' }}</h4>
+            <div class="feed-meta">
+              <span>{{ user.email || user.phone || '-' }}</span>
+              <span>{{ user.school || '-' }}</span>
+              <span>{{ user.college || '-' }}</span>
+            </div>
+            <div class="feed-actions">
+              <button class="ghost-btn" type="button" @click="selectUserForStatus(user)">选择该用户</button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="feed-empty">暂无用户。</div>
+        <div class="pager" v-if="userTotal > userSize">
+          <button class="ghost-btn" type="button" :disabled="userPage <= 1" @click="loadUsers(userPage - 1)">
+            上一页
+          </button>
+          <span>{{ userPage }} / {{ userPages }}</span>
+          <button
+            class="ghost-btn"
+            type="button"
+            :disabled="userPage >= userPages"
+            @click="loadUsers(userPage + 1)"
+          >
+            下一页
+          </button>
+        </div>
         <label class="field">
           <span>状态</span>
           <select v-model.number="userStatus">
@@ -589,4 +681,6 @@ onMounted(() => {
     </section>
   </div>
 </template>
+
+
 

@@ -17,8 +17,10 @@ public class Report {
     private String reason;
     private String detail;
     private Integer status;
+    private Integer decision;
     private Long handledBy;
     private LocalDateTime handledAt;
     private String result;
     private LocalDateTime createdAt;
 }
+

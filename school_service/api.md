@@ -5,7 +5,8 @@
 ### 1.1 用户注册
 - **URL**: `POST /api/auth/register`
 - **说明**: 注册新用户（用户名必填，邮箱/手机号二选一可选）
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "username": "alice",
@@ -53,7 +54,8 @@
 ### 1.2 用户登录
 - **URL**: `POST /api/auth/login`
 - **说明**: 登录支持用户名/邮箱/手机号三种方式
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "account": "alice@school.edu",
@@ -162,7 +164,8 @@
 - **URL**: `PUT /api/users/{id}`
 - **说明**: 更新个人资料（仅修改提交的字段）
 - **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "email": "alice@school.edu",
@@ -198,7 +201,8 @@
 - **URL**: `PUT /api/users/{id}/tags`
 - **说明**: 覆盖式更新用户兴趣标签（传入 tagIds 列表）
 - **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "tagIds": [1, 2, 3]
@@ -250,7 +254,8 @@
 - **URL**: `POST /api/posts`
 - **说明**: 发布内容，支持标签与多媒体；`draft=true` 代表草稿
 - **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "title": "标题",
@@ -382,7 +387,8 @@
 - **URL**: `POST /api/likes`
 - **说明**: 对内容或评论点赞
 - **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "targetType": 0,
@@ -406,7 +412,8 @@
 - **URL**: `POST /api/favorites`
 - **说明**: 收藏内容
 - **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 { "postId": 1001 }
 ```
@@ -422,7 +429,8 @@
 - **URL**: `POST /api/comments`
 - **说明**: 发布评论；传 `parentId` 表示回复
 - **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "postId": 1001,
@@ -452,7 +460,8 @@
 - **URL**: `POST /api/shares`
 - **说明**: 记录分享行为（当前仅记录行为日志）
 - **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 { "postId": 1001, "channel": "wechat" }
 ```
@@ -566,7 +575,8 @@
 - **URL**: `POST /api/reports`
 - **说明**: 举报内容/评论/用户
 - **鉴权**: 需要在请求头携带 `Authorization: Bearer <token>`
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "targetType": 0,
@@ -603,7 +613,8 @@
 - **URL**: `PUT /api/admin/posts/{id}/review`
 - **说明**: 管理员审核内容
 - **鉴权**: 需要管理员账号 Token
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "decision": 1,
@@ -627,9 +638,10 @@
 
 ### 10.2 处理举报
 - **URL**: `PUT /api/reports/admin/{id}/handle`
-- **说明**: 处理举报并填写结果
+- **说明**: 处理举报并填写结果（若判定属实，内容将下架并通知举报人与被举报人）
 - **鉴权**: 需要管理员账号 Token
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "decision": 1,
@@ -654,7 +666,8 @@
 - **URL**: `POST /api/admin/tags`
 - **说明**: 新增标签
 - **鉴权**: 需要管理员账号 Token
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 { "name": "学习", "type": 0, "status": 1 }
 ```
@@ -664,7 +677,8 @@
 - **URL**: `PUT /api/admin/tags/{id}`
 - **说明**: 更新标签
 - **鉴权**: 需要管理员账号 Token
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 { "name": "学习分享", "type": 0, "status": 1 }
 ```
@@ -687,7 +701,8 @@
 - **URL**: `POST /api/admin/announcements`
 - **说明**: 发布公告
 - **鉴权**: 需要管理员账号 Token
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 { "title": "系统维护", "content": "今晚 22:00 维护", "status": 0 }
 ```
@@ -697,7 +712,8 @@
 - **URL**: `PUT /api/admin/announcements/{id}`
 - **说明**: 更新公告
 - **鉴权**: 需要管理员账号 Token
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 { "title": "系统维护更新", "content": "维护时间调整", "status": 0 }
 ```
@@ -713,23 +729,32 @@
 - **URL**: `PUT /api/admin/posts/{id}/flags`
 - **说明**: 设置内容置顶/精选
 - **鉴权**: 需要管理员账号 Token
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 { "pinned": 1, "featured": 0 }
 ```
 - **响应**: `Post`
 
-### 11.10 用户黑名单（封禁/解禁）
+### 11.10 用户列表（搜索）
+- **URL**: `GET /api/admin/users`
+- **说明**: 管理员分页获取用户列表，支持关键词搜索
+- **鉴权**: 需要管理员账号 Token
+- **参数**: `page`（默认 1），`size`（默认 10，最大 50），`keyword`（可选，用户名/邮箱/手机号），`status`（可选）
+- **响应**: `PageResponse<User>`
+
+### 11.11 用户黑名单（封禁/解禁）
 - **URL**: `PUT /api/admin/users/{id}/status`
 - **说明**: 设置用户状态（0 正常，1 封禁）
 - **鉴权**: 需要管理员账号 Token
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 { "status": 1 }
 ```
 - **响应**: `User`
 
-### 11.11 推荐配置（读取/更新）
+### 11.12 推荐配置（读取/更新）
 - **URL**: `GET /api/admin/recommend/config`
 - **说明**: 获取推荐权重与策略开关
 - **鉴权**: 需要管理员账号 Token
@@ -738,7 +763,8 @@
 - **URL**: `PUT /api/admin/recommend/config`
 - **说明**: 更新推荐权重与策略开关（已持久化到数据库）
 - **鉴权**: 需要管理员账号 Token
-- **请求体**（JSON）:
+- **请求体**（JSON）：
+- **decision**: 1=属实，2=不属实
 ```json
 {
   "enableHot": true,
@@ -829,4 +855,7 @@
   ]
 }
 ```
+
+
+
 

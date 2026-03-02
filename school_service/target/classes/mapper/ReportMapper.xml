@@ -10,6 +10,7 @@
         <if test="reason != null">reason,</if>
         <if test="detail != null">detail,</if>
         <if test="status != null">status,</if>
+        <if test="decision != null">decision,</if>
         <if test="handledBy != null">handled_by,</if>
         <if test="handledAt != null">handled_at,</if>
         <if test="result != null">result,</if>
@@ -22,6 +23,7 @@
         <if test="reason != null">#{reason},</if>
         <if test="detail != null">#{detail},</if>
         <if test="status != null">#{status},</if>
+        <if test="decision != null">#{decision},</if>
         <if test="handledBy != null">#{handledBy},</if>
         <if test="handledAt != null">#{handledAt},</if>
         <if test="result != null">#{result},</if>
@@ -37,6 +39,7 @@
         <if test="reason != null">reason = #{reason},</if>
         <if test="detail != null">detail = #{detail},</if>
         <if test="status != null">status = #{status},</if>
+        <if test="decision != null">decision = #{decision},</if>
         <if test="handledBy != null">handled_by = #{handledBy},</if>
         <if test="handledAt != null">handled_at = #{handledAt},</if>
         <if test="result != null">result = #{result},</if>
@@ -48,14 +51,14 @@
         DELETE FROM reports WHERE id = #{id}
     </delete>
     <select id="selectById" parameterType="long" resultType="com.school.social.entity.Report">
-        SELECT id, reporter_id, target_type, target_id, reason, detail, status, handled_by, handled_at, result, created_at FROM reports WHERE id = #{id}
+        SELECT id, reporter_id, target_type, target_id, reason, detail, status, handled_by, handled_at, result, decision, created_at FROM reports WHERE id = #{id}
     </select>
     <select id="selectAll" resultType="com.school.social.entity.Report">
-        SELECT id, reporter_id, target_type, target_id, reason, detail, status, handled_by, handled_at, result, created_at FROM reports
+        SELECT id, reporter_id, target_type, target_id, reason, detail, status, handled_by, handled_at, result, decision, created_at FROM reports
     </select>
     <select id="selectByReporterPaged" resultType="com.school.social.entity.Report">
         SELECT id, reporter_id, target_type, target_id, reason, detail, status,
-               handled_by, handled_at, result, created_at
+               handled_by, handled_at, result, decision, created_at
         FROM reports
         <where>
             reporter_id = #{reporterId}
@@ -78,7 +81,7 @@
     </select>
     <select id="selectAllPaged" resultType="com.school.social.entity.Report">
         SELECT id, reporter_id, target_type, target_id, reason, detail, status,
-               handled_by, handled_at, result, created_at
+               handled_by, handled_at, result, decision, created_at
         FROM reports
         <where>
             <if test="status != null">
@@ -99,3 +102,5 @@
     </select>
 
 </mapper>
+
+
