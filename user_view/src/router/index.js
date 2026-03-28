@@ -12,6 +12,7 @@ import AdminReportsView from '../views/AdminReportsView.vue'
 import AdminOpsView from '../views/AdminOpsView.vue'
 import AdminStatsView from '../views/AdminStatsView.vue'
 import AdminAuditView from '../views/AdminAuditView.vue'
+import AdminAuditDetailView from '../views/AdminAuditDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -62,6 +63,10 @@ const router = createRouter({
     },
     {
       path: '/admin',
+      redirect: '/admin/stats',
+    },
+    {
+      path: '/admin/overview',
       name: 'admin-home',
       component: AdminHomeView,
     },
@@ -69,6 +74,11 @@ const router = createRouter({
       path: '/admin/audit',
       name: 'admin-audit',
       component: AdminAuditView,
+    },
+    {
+      path: '/admin/audit/:id',
+      name: 'admin-audit-detail',
+      component: AdminAuditDetailView,
     },
     {
       path: '/admin/reports',

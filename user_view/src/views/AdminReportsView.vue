@@ -1,7 +1,10 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch } from '../utils/api'
+import { ElMessage } from 'element-plus'
+import { RefreshRight } from '@element-plus/icons-vue'
+import AdminShell from '../components/admin/AdminShell.vue'
+import { formatDateTime, requestData, shortText } from '../utils/admin'
 
 const router = useRouter()
 const reportList = ref([])
@@ -13,69 +16,38 @@ const reportLoading = ref(false)
 const reportError = ref('')
 const reportResultMap = ref({})
 const reportDecisionMap = ref({})
-const reportActionError = ref('')
-const reportActionSuccess = ref('')
-
-const reportPages = computed(() => {
-  const pages = Math.ceil(reportTotal.value / reportSize.value)
-  return pages > 0 ? pages : 1
-})
 
 const loadReports = async (targetPage = 1) => {
   reportLoading.value = true
   reportError.value = ''
-  reportActionError.value = ''
-  reportActionSuccess.value = ''
   try {
-    const res = await apiFetch(`/api/reports/admin?page=${targetPage}&size=${reportSize.value}&status=${reportStatus.value}`)
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      reportError.value = data.message || '获取举报列表失败。'
-      return
-    }
-    reportList.value = data.data?.list || []
-    reportTotal.value = data.data?.total ?? 0
-    reportPage.value = data.data?.page ?? targetPage
+    const data = await requestData(
+      router,
+      `/api/reports/admin?page=${targetPage}&size=${reportSize.value}&status=${reportStatus.value}`,
+    )
+    reportList.value = data?.list || []
+    reportTotal.value = data?.total ?? 0
+    reportPage.value = data?.page ?? targetPage
   } catch (err) {
-    reportError.value = '网络错误，无法获取举报列表。'
+    reportError.value = err?.message || '获取举报列表失败'
   } finally {
     reportLoading.value = false
   }
 }
 
-const setReportFilter = (status) => {
-  reportStatus.value = status
-  loadReports(1)
-}
-
 const handleReport = async (reportId) => {
-  reportActionError.value = ''
-  reportActionSuccess.value = ''
   try {
-    const res = await apiFetch(`/api/reports/admin/${reportId}/handle`, {
+    await requestData(router, `/api/reports/admin/${reportId}/handle`, {
       method: 'PUT',
       body: JSON.stringify({
         decision: reportDecisionMap.value[reportId] ?? 1,
         result: reportResultMap.value[reportId] || '已处理',
       }),
     })
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      reportActionError.value = data.message || '处理失败。'
-      return
-    }
-    reportActionSuccess.value = '已处理举报。'
+    ElMessage.success('举报已处理')
     loadReports(reportPage.value)
   } catch (err) {
-    reportActionError.value = '网络错误，处理失败。'
+    ElMessage.error(err?.message || '举报处理失败')
   }
 }
 
@@ -85,75 +57,141 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="profile-page">
-    <header class="profile-hero">
-      <div>
-        <span class="hero-tag">举报处理</span>
-        <h1>举报队列管理</h1>
-        <p>集中处理全站举报与结论。</p>
+  <AdminShell title="举报处理中心" subtitle="集中处理举报工单，保留处理结论与说明，形成清晰风控闭环。">
+    <template #actions>
+      <div class="admin-filter-group">
+        <el-radio-group v-model="reportStatus" @change="loadReports(1)">
+          <el-radio-button :label="0">待处理</el-radio-button>
+          <el-radio-button :label="1">已处理</el-radio-button>
+        </el-radio-group>
+        <el-button :icon="RefreshRight" plain @click="loadReports(reportPage)">刷新</el-button>
       </div>
-      <div class="profile-actions">
-        <button class="ghost-btn" type="button" @click="router.push('/admin')">返回后台</button>
-        <button class="ghost-btn" type="button" @click="loadReports(reportPage)">刷新举报</button>
-      </div>
-    </header>
+    </template>
 
-    <section class="profile-section">
-      <div class="tabs">
-        <button class="tab-btn" :class="{ active: reportStatus === 0 }" @click="setReportFilter(0)">待处理</button>
-        <button class="tab-btn" :class="{ active: reportStatus === 1 }" @click="setReportFilter(1)">已处理</button>
-      </div>
+    <div class="admin-stack">
+      <el-alert
+        v-if="reportError"
+        type="error"
+        :closable="false"
+        show-icon
+        :title="reportError"
+      />
 
-      <div v-if="reportLoading" class="feed-empty">加载中...</div>
-      <div v-else-if="reportError" class="form-alert error">{{ reportError }}</div>
-      <div v-else-if="reportList.length" class="report-list">
-        <div v-for="report in reportList" :key="report.id" class="report-card">
-          <div class="feed-meta">
-            <span>举报ID {{ report.id }}</span>
-            <span>对象 {{ report.targetType === 0 ? '内容' : report.targetType === 1 ? '评论' : '用户' }} #{{ report.targetId }}</span>
-            <span>状态：{{ report.status === 1 ? '已处理' : '待处理' }}</span>
+      <el-card class="admin-surface-card" shadow="never">
+        <div class="admin-section-heading">
+          <div>
+            <h3>举报工单列表</h3>
+            <p>展开记录后可直接写入结论、说明并完成处理。</p>
           </div>
-          <h4>{{ report.reason }}</h4>
-          <p>{{ report.detail || '未填写补充说明' }}</p>
-          <div v-if="report.status === 1" class="muted">处理结果：{{ report.decision === 1 ? '属实' : '不属实' }}，{{ report.result || '已处理' }}</div>
-          <div v-else class="report-handle">
-            <label class="field">
-              <span>处理结论</span>
-              <select v-model.number="reportDecisionMap[report.id]">
-                <option :value="1">属实</option>
-                <option :value="2">不属实</option>
-              </select>
-            </label>
-            <label class="field">
-              <span>处理说明</span>
-              <input v-model="reportResultMap[report.id]" type="text" placeholder="填写处理说明" />
-            </label>
-            <button class="ghost-btn" type="button" @click="handleReport(report.id)">处理完成</button>
-          </div>
+          <el-tag round effect="plain">共 {{ reportTotal }} 条举报</el-tag>
         </div>
-      </div>
-      <div v-else class="feed-empty">暂无举报。</div>
 
-      <div class="pager" v-if="reportTotal > reportSize">
-        <button class="ghost-btn" type="button" :disabled="reportPage <= 1" @click="loadReports(reportPage - 1)">
-          上一页
-        </button>
-        <span>{{ reportPage }} / {{ reportPages }}</span>
-        <button
-          class="ghost-btn"
-          type="button"
-          :disabled="reportPage >= reportPages"
-          @click="loadReports(reportPage + 1)"
-        >
-          下一页
-        </button>
-      </div>
+        <el-table class="admin-compact-table" :data="reportList" v-loading="reportLoading">
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <div class="admin-expand-panel">
+                <div class="admin-expand-meta">
+                  <div>
+                    <span>举报对象</span>
+                    <strong>
+                      {{ row.targetType === 0 ? '内容' : row.targetType === 1 ? '评论' : '用户' }} #{{ row.targetId }}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>提交时间</span>
+                    <strong>{{ formatDateTime(row.createdAt) }}</strong>
+                  </div>
+                  <div>
+                    <span>当前状态</span>
+                    <strong>{{ row.status === 1 ? '已处理' : '待处理' }}</strong>
+                  </div>
+                </div>
 
-      <p v-if="reportActionError" class="form-alert error">{{ reportActionError }}</p>
-      <p v-if="reportActionSuccess" class="form-alert success">{{ reportActionSuccess }}</p>
-    </section>
-  </div>
+                <div class="admin-expand-content">{{ row.detail || '举报人未填写补充说明' }}</div>
+
+                <div style="margin-top:18px;" class="admin-form-grid">
+                  <el-select v-model="reportDecisionMap[row.id]" :disabled="row.status === 1">
+                    <el-option :value="1" label="属实" />
+                    <el-option :value="2" label="不属实" />
+                  </el-select>
+                  <el-input
+                    v-model="reportResultMap[row.id]"
+                    :disabled="row.status === 1"
+                    type="textarea"
+                    :rows="3"
+                    placeholder="填写处理说明"
+                  />
+                </div>
+
+                <div style="margin-top:18px;display:flex;gap:12px;justify-content:flex-end;">
+                  <el-button
+                    v-if="row.status !== 1"
+                    type="primary"
+                    @click="handleReport(row.id)"
+                  >
+                    标记为已处理
+                  </el-button>
+                  <el-tag v-else type="success" round>
+                    {{ row.decision === 1 ? '属实' : '不属实' }} / {{ row.result || '已处理' }}
+                  </el-tag>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="id" label="举报 ID" width="96" />
+          <el-table-column label="举报原因" min-width="220">
+            <template #default="{ row }">
+              <div style="font-weight:600;color:#0f172a;">{{ row.reason || '未命名原因' }}</div>
+              <div style="margin-top:4px;color:#64748b;">{{ shortText(row.detail, 72) }}</div>
+            </template>
+          </el-table-column>
+          <el-table-column label="举报对象" width="180">
+            <template #default="{ row }">
+              {{ row.targetType === 0 ? '内容' : row.targetType === 1 ? '评论' : '用户' }} #{{ row.targetId }}
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="110">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 1 ? 'success' : 'warning'" round>
+                {{ row.status === 1 ? '已处理' : '待处理' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="提交时间" width="180">
+            <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                :disabled="row.status === 1"
+                type="primary"
+                link
+                @click="handleReport(row.id)"
+              >
+                处理
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-empty
+          v-if="!reportLoading && !reportList.length"
+          class="admin-empty"
+          description="当前筛选条件下没有举报数据"
+        />
+
+        <div class="admin-table-footer" v-if="reportTotal > reportSize">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :current-page="reportPage"
+            :page-size="reportSize"
+            :total="reportTotal"
+            @current-change="loadReports"
+          />
+        </div>
+      </el-card>
+    </div>
+  </AdminShell>
 </template>
-
-
-

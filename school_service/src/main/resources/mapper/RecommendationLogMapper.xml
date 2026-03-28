@@ -44,5 +44,46 @@
     <select id="selectAll" resultType="com.school.social.entity.RecommendationLog">
         SELECT id, user_id, post_id, scene, score, rank_pos, is_clicked, created_at FROM recommendation_logs
     </select>
+    <select id="selectLatestByUserAndPostScene" resultType="com.school.social.entity.RecommendationLog">
+        SELECT id, user_id, post_id, scene, score, rank_pos, is_clicked, created_at
+        FROM recommendation_logs
+        WHERE user_id = #{userId}
+          AND post_id = #{postId}
+          AND scene = #{scene}
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+    </select>
+    <select id="countSince" resultType="int">
+        SELECT COUNT(1)
+        FROM recommendation_logs
+        WHERE created_at &gt;= #{start}
+    </select>
+    <select id="countClicksSince" resultType="int">
+        SELECT COUNT(1)
+        FROM recommendation_logs
+        WHERE created_at &gt;= #{start}
+          AND is_clicked = 1
+    </select>
+    <select id="selectSceneStatsSince" resultType="com.school.social.dto.admin.RecommendSceneStat">
+        SELECT scene AS scene,
+               COUNT(1) AS exposureCount,
+               SUM(CASE WHEN is_clicked = 1 THEN 1 ELSE 0 END) AS clickCount
+        FROM recommendation_logs
+        WHERE created_at &gt;= #{start}
+        GROUP BY scene
+        ORDER BY exposureCount DESC, scene ASC
+    </select>
+    <select id="selectTopPostsSince" resultType="com.school.social.dto.admin.RecommendPostStat">
+        SELECT rl.post_id AS postId,
+               MAX(p.title) AS title,
+               COUNT(1) AS exposureCount,
+               SUM(CASE WHEN rl.is_clicked = 1 THEN 1 ELSE 0 END) AS clickCount
+        FROM recommendation_logs rl
+        LEFT JOIN posts p ON p.id = rl.post_id
+        WHERE rl.created_at &gt;= #{start}
+        GROUP BY rl.post_id
+        ORDER BY exposureCount DESC, clickCount DESC, postId DESC
+        LIMIT #{limit}
+    </select>
 
 </mapper>

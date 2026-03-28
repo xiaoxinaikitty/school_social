@@ -1,7 +1,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch } from '../utils/api'
+import { ElMessage } from 'element-plus'
+import { RefreshRight, View } from '@element-plus/icons-vue'
+import AdminShell from '../components/admin/AdminShell.vue'
+import { formatDateTime, requestData, shortText } from '../utils/admin'
 
 const router = useRouter()
 const posts = ref([])
@@ -12,77 +15,58 @@ const statusFilter = ref(0)
 const loading = ref(false)
 const error = ref('')
 const noteMap = ref({})
-const actionError = ref('')
-const actionSuccess = ref('')
 
-const totalPages = computed(() => {
-  const pages = Math.ceil(total.value / size.value)
-  return pages > 0 ? pages : 1
-})
+const statusOptions = [
+  { label: '待审', value: 0 },
+  { label: '已通过', value: 1 },
+  { label: '已驳回', value: 2 },
+]
+
+const totalPages = computed(() => Math.max(Math.ceil(total.value / size.value), 1))
 
 const statusLabel = (status) => {
-  if (status === 1) return { label: '通过', tone: 'approved' }
-  if (status === 2) return { label: '驳回', tone: 'rejected' }
-  if (status === 3) return { label: '草稿', tone: 'draft' }
-  return { label: '待审', tone: 'pending' }
+  if (status === 1) return { label: '通过', type: 'success' }
+  if (status === 2) return { label: '驳回', type: 'danger' }
+  if (status === 3) return { label: '草稿', type: 'info' }
+  return { label: '待审', type: 'warning' }
 }
 
 const loadPosts = async (targetPage = 1) => {
   loading.value = true
   error.value = ''
-  actionSuccess.value = ''
-  actionError.value = ''
   try {
-    const res = await apiFetch(`/api/admin/posts?page=${targetPage}&size=${size.value}&status=${statusFilter.value}`)
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      error.value = data.message || '获取审核列表失败。'
-      return
-    }
-    posts.value = data.data?.list || []
-    total.value = data.data?.total ?? 0
-    page.value = data.data?.page ?? targetPage
+    const data = await requestData(
+      router,
+      `/api/admin/posts?page=${targetPage}&size=${size.value}&status=${statusFilter.value}`,
+    )
+    posts.value = data?.list || []
+    total.value = data?.total ?? 0
+    page.value = data?.page ?? targetPage
   } catch (err) {
-    error.value = '网络错误，无法获取审核列表。'
+    error.value = err?.message || '获取审核列表失败'
   } finally {
     loading.value = false
   }
 }
 
-const setFilter = (status) => {
-  statusFilter.value = status
-  loadPosts(1)
-}
-
 const reviewPost = async (postId, decision) => {
-  actionError.value = ''
-  actionSuccess.value = ''
   try {
-    const res = await apiFetch(`/api/admin/posts/${postId}/review`, {
+    await requestData(router, `/api/admin/posts/${postId}/review`, {
       method: 'PUT',
       body: JSON.stringify({
         decision,
         note: noteMap.value[postId] || null,
       }),
     })
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      actionError.value = data.message || '审核失败。'
-      return
-    }
-    actionSuccess.value = decision === 1 ? '已通过该内容。' : '已驳回该内容。'
+    ElMessage.success(decision === 1 ? '内容已通过' : '内容已驳回')
     loadPosts(page.value)
   } catch (err) {
-    actionError.value = '网络错误，审核失败。'
+    ElMessage.error(err?.message || '审核失败')
   }
+}
+
+const openAuditDetail = (postId) => {
+  router.push(`/admin/audit/${postId}`)
 }
 
 onMounted(() => {
@@ -91,79 +75,119 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="profile-page">
-    <header class="profile-hero">
-      <div>
-        <span class="hero-tag">内容审核</span>
-        <h1>内容审核与记录</h1>
-        <p>集中处理待审内容，保留审核意见。</p>
+  <AdminShell title="内容审核中心" subtitle="用结构化表格和展开详情处理待审内容，减少重复跳转。">
+    <template #actions>
+      <div class="admin-filter-group">
+        <el-radio-group v-model="statusFilter" @change="loadPosts(1)">
+          <el-radio-button
+            v-for="item in statusOptions"
+            :key="item.value"
+            :label="item.value"
+          >
+            {{ item.label }}
+          </el-radio-button>
+        </el-radio-group>
+        <el-button :icon="RefreshRight" plain @click="loadPosts(page)">刷新</el-button>
       </div>
-      <div class="profile-actions">
-        <button class="ghost-btn" type="button" @click="loadPosts(page)">刷新列表</button>
-        <button class="ghost-btn" type="button" @click="router.push('/admin')">返回后台</button>
-      </div>
-    </header>
+    </template>
 
-    <section class="profile-section">
-      <div class="profile-header">
-        <div>
-          <h2>审核列表</h2>
-          <p>按状态查看内容审核记录。</p>
+    <div class="admin-stack">
+      <el-alert
+        v-if="error"
+        type="error"
+        :closable="false"
+        show-icon
+        :title="error"
+      />
+
+      <el-card class="admin-surface-card" shadow="never">
+        <div class="admin-section-heading">
+          <div>
+            <h3>审核队列</h3>
+            <p>支持展开查看正文、写入审核意见并直接完成审核动作。</p>
+          </div>
+          <el-tag round effect="plain">共 {{ total }} 条记录</el-tag>
         </div>
-      </div>
 
-      <div class="tabs">
-        <button class="tab-btn" :class="{ active: statusFilter === 0 }" @click="setFilter(0)">待审</button>
-        <button class="tab-btn" :class="{ active: statusFilter === 1 }" @click="setFilter(1)">通过</button>
-        <button class="tab-btn" :class="{ active: statusFilter === 2 }" @click="setFilter(2)">驳回</button>
-      </div>
+        <el-table class="admin-compact-table" :data="posts" v-loading="loading">
+          <el-table-column type="expand">
+            <template #default="{ row }">
+              <div class="admin-expand-panel">
+                <div class="admin-expand-meta">
+                  <div>
+                    <span>内容编号</span>
+                    <strong>#{{ row.id }}</strong>
+                  </div>
+                  <div>
+                    <span>发布者</span>
+                    <strong>{{ row.userId }}</strong>
+                  </div>
+                  <div>
+                    <span>创建时间</span>
+                    <strong>{{ formatDateTime(row.createdAt) }}</strong>
+                  </div>
+                </div>
 
-      <div v-if="loading" class="feed-empty">加载中...</div>
-      <div v-else-if="error" class="form-alert error">{{ error }}</div>
-      <div v-else-if="posts.length" class="feed-grid">
-        <div v-for="post in posts" :key="post.id" class="feed-item">
-          <div class="feed-item-top">
-            <span class="feed-label">内容 #{{ post.id }}</span>
-            <span class="status-pill" :class="statusLabel(post.status).tone">
-              {{ statusLabel(post.status).label }}
-            </span>
-          </div>
-          <h4>{{ post.title || '未命名内容' }}</h4>
-          <p>{{ post.content?.slice(0, 80) || '暂无内容' }}</p>
-          <div class="feed-meta">
-            <span>发布者 {{ post.userId }}</span>
-            <span>{{ post.createdAt || '-' }}</span>
-          </div>
-          <label class="field">
-            <span>审核备注</span>
-            <input v-model="noteMap[post.id]" type="text" placeholder="可填写审核意见" />
-          </label>
-          <div class="feed-actions">
-            <button class="ghost-btn" type="button" @click="reviewPost(post.id, 1)">通过</button>
-            <button class="ghost-btn danger" type="button" @click="reviewPost(post.id, 2)">驳回</button>
-            <button class="ghost-btn" type="button" @click="router.push(`/posts/${post.id}`)">查看详情</button>
-          </div>
+                <div class="admin-expand-content">{{ row.content || '暂无正文内容' }}</div>
+
+                <div style="margin-top:18px;" class="admin-form-grid">
+                  <el-input
+                    v-model="noteMap[row.id]"
+                    type="textarea"
+                    :rows="3"
+                    placeholder="填写审核意见，可选"
+                  />
+                  <div class="admin-side-stack">
+                    <el-button type="primary" @click="reviewPost(row.id, 1)">通过内容</el-button>
+                    <el-button type="danger" plain @click="reviewPost(row.id, 2)">驳回内容</el-button>
+                    <el-button :icon="View" plain @click="openAuditDetail(row.id)">查看审核详情</el-button>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="id" label="内容 ID" width="96" />
+          <el-table-column label="标题" min-width="220">
+            <template #default="{ row }">
+              <div style="font-weight:600;color:#0f172a;">{{ row.title || '未命名内容' }}</div>
+              <div style="margin-top:4px;color:#64748b;">{{ shortText(row.content, 66) }}</div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="userId" label="发布者" width="96" />
+          <el-table-column label="状态" width="110">
+            <template #default="{ row }">
+              <el-tag :type="statusLabel(row.status).type" round>{{ statusLabel(row.status).label }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" width="180">
+            <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="220" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" link @click="reviewPost(row.id, 1)">通过</el-button>
+              <el-button type="danger" link @click="reviewPost(row.id, 2)">驳回</el-button>
+              <el-button link @click="openAuditDetail(row.id)">详情</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <el-empty
+          v-if="!loading && !posts.length"
+          class="admin-empty"
+          description="当前筛选条件下没有内容"
+        />
+
+        <div class="admin-table-footer" v-if="total > size">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :current-page="page"
+            :page-size="size"
+            :total="total"
+            @current-change="loadPosts"
+          />
         </div>
-      </div>
-      <div v-else class="feed-empty">暂无内容。</div>
-
-      <div class="pager" v-if="total > size">
-        <button class="ghost-btn" type="button" :disabled="page <= 1" @click="loadPosts(page - 1)">
-          上一页
-        </button>
-        <span>{{ page }} / {{ totalPages }}</span>
-        <button
-          class="ghost-btn"
-          type="button"
-          :disabled="page >= totalPages"
-          @click="loadPosts(page + 1)"
-        >
-          下一页
-        </button>
-      </div>
-
-      <p v-if="actionError" class="form-alert error">{{ actionError }}</p>
-      <p v-if="actionSuccess" class="form-alert success">{{ actionSuccess }}</p>
-    </section>
-  </div>
+      </el-card>
+    </div>
+  </AdminShell>
 </template>

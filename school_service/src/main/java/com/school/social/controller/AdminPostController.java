@@ -2,6 +2,7 @@ package com.school.social.controller;
 
 import com.school.social.common.ApiResponse;
 import com.school.social.common.PageResponse;
+import com.school.social.dto.post.PostDetailResponse;
 import com.school.social.dto.admin.PostReviewRequest;
 import com.school.social.dto.admin.PostFlagRequest;
 import com.school.social.entity.AuditLog;
@@ -11,7 +12,9 @@ import com.school.social.entity.Role;
 import com.school.social.entity.UserRole;
 import com.school.social.mapper.AuditLogMapper;
 import com.school.social.mapper.NotificationMapper;
+import com.school.social.mapper.PostMediaMapper;
 import com.school.social.mapper.PostMapper;
+import com.school.social.mapper.PostTagMapper;
 import com.school.social.mapper.RoleMapper;
 import com.school.social.mapper.UserRoleMapper;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,6 +55,12 @@ public class AdminPostController {
     @Resource
     private NotificationMapper notificationMapper;
 
+    @Resource
+    private PostMediaMapper postMediaMapper;
+
+    @Resource
+    private PostTagMapper postTagMapper;
+
     @GetMapping
     public ApiResponse<PageResponse<Post>> list(@RequestParam(defaultValue = "1") int page,
                                                 @RequestParam(defaultValue = "10") int size,
@@ -70,6 +79,19 @@ public class AdminPostController {
         List<Post> list = postMapper.selectPaged(queryStatus, offset, safeSize);
         long total = postMapper.countByStatus(queryStatus);
         return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<PostDetailResponse> detail(@PathVariable Long id,
+                                                  HttpServletRequest httpRequest) {
+        if (!isAdmin(httpRequest)) {
+            return ApiResponse.fail("无权限访问");
+        }
+        Post post = postMapper.selectById(id);
+        if (post == null) {
+            return ApiResponse.fail("内容不存在");
+        }
+        return ApiResponse.success(buildDetail(post));
     }
 
     @PutMapping("/{id}/review")
@@ -172,5 +194,28 @@ public class AdminPostController {
         notification.setIsRead(0);
         notification.setCreatedAt(LocalDateTime.now());
         notificationMapper.insert(notification);
+    }
+
+    private PostDetailResponse buildDetail(Post post) {
+        PostDetailResponse resp = new PostDetailResponse();
+        resp.setId(post.getId());
+        resp.setUserId(post.getUserId());
+        resp.setTitle(post.getTitle());
+        resp.setContent(post.getContent());
+        resp.setPostType(post.getPostType());
+        resp.setStatus(post.getStatus());
+        resp.setVisibility(post.getVisibility());
+        resp.setLocation(post.getLocation());
+        resp.setCollege(post.getCollege());
+        resp.setLikeCount(post.getLikeCount());
+        resp.setCommentCount(post.getCommentCount());
+        resp.setFavoriteCount(post.getFavoriteCount());
+        resp.setViewCount(post.getViewCount());
+        resp.setCreatedAt(post.getCreatedAt());
+        resp.setUpdatedAt(post.getUpdatedAt());
+        resp.setPublishedAt(post.getPublishedAt());
+        resp.setTagIds(postTagMapper.selectTagIdsByPostId(post.getId()));
+        resp.setMedia(postMediaMapper.selectByPostId(post.getId()));
+        return resp;
     }
 }

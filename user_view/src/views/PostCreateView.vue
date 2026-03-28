@@ -1,7 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { PictureFilled, UploadFilled } from '@element-plus/icons-vue'
 import { apiFetch, apiUpload } from '../utils/api'
+import { getPostTypeLabel, getVisibilityLabel } from '../utils/user'
+import UserShell from '../components/user/UserShell.vue'
 
 const router = useRouter()
 const title = ref('')
@@ -25,18 +28,42 @@ const uploading = ref(false)
 const uploadError = ref('')
 const fileInputRef = ref(null)
 
+const authGuard = (res) => {
+  if (res.status === 401) {
+    router.push('/login')
+    return true
+  }
+  return false
+}
+
+const selectedTagNames = computed(() => availableTags.value.filter((tag) => selectedTagIds.value.includes(tag.id)).map((tag) => tag.name))
+
+const loadAvailableTags = async () => {
+  loadingTags.value = true
+  tagsError.value = ''
+  try {
+    const res = await apiFetch('/api/tags')
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      tagsError.value = data.message || '获取标签列表失败。'
+      return
+    }
+    availableTags.value = data.data || []
+  } catch (error) {
+    tagsError.value = '网络错误，无法获取标签列表。'
+  } finally {
+    loadingTags.value = false
+  }
+}
+
+const triggerUpload = () => fileInputRef.value?.click()
+
 const removeMedia = (index) => {
   mediaInputs.value.splice(index, 1)
   mediaInputs.value.forEach((item, idx) => {
     item.sortOrder = idx + 1
   })
-}
-
-const triggerUpload = () => {
-  uploadError.value = ''
-  if (fileInputRef.value) {
-    fileInputRef.value.click()
-  }
 }
 
 const handleFiles = async (event) => {
@@ -49,53 +76,25 @@ const handleFiles = async (event) => {
       const formData = new FormData()
       formData.append('file', file)
       const res = await apiUpload('/api/upload', formData)
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
+      if (authGuard(res)) return
       const data = await res.json()
       if (!res.ok || data.code !== 0) {
         uploadError.value = data.message || '上传失败。'
         return
       }
-      const url = data.data?.url
-      if (url) {
+      if (data.data?.url) {
         mediaInputs.value.push({
-          url,
+          url: data.data.url,
           mediaType: file.type.startsWith('video/') ? 1 : 0,
           sortOrder: mediaInputs.value.length + 1,
         })
       }
     }
-  } catch (err) {
+  } catch (error) {
     uploadError.value = '网络错误，上传失败。'
   } finally {
     uploading.value = false
-    if (event.target) {
-      event.target.value = ''
-    }
-  }
-}
-
-const loadAvailableTags = async () => {
-  loadingTags.value = true
-  tagsError.value = ''
-  try {
-    const res = await apiFetch('/api/tags')
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      tagsError.value = data.message || '获取标签列表失败。'
-      return
-    }
-    availableTags.value = data.data || []
-  } catch (err) {
-    tagsError.value = '网络错误，无法获取标签列表。'
-  } finally {
-    loadingTags.value = false
+    if (event.target) event.target.value = ''
   }
 }
 
@@ -108,14 +107,7 @@ const submit = async () => {
   }
   loading.value = true
   try {
-    const media = mediaInputs.value
-      .filter((item) => item.url && item.url.trim())
-      .map((item) => ({
-        url: item.url.trim(),
-        mediaType: item.mediaType,
-        sortOrder: item.sortOrder,
-      }))
-
+    const media = mediaInputs.value.filter((item) => item.url).map((item) => ({ url: item.url, mediaType: item.mediaType, sortOrder: item.sortOrder }))
     const payload = {
       title: title.value.trim() || null,
       content: content.value.trim(),
@@ -127,25 +119,16 @@ const submit = async () => {
       tagIds: selectedTagIds.value,
       media,
     }
-
-    const res = await apiFetch('/api/posts', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
+    const res = await apiFetch('/api/posts', { method: 'POST', body: JSON.stringify(payload) })
+    if (authGuard(res)) return
     const data = await res.json()
     if (!res.ok || data.code !== 0) {
       error.value = data.message || '发布失败，请检查输入。'
       return
     }
     success.value = isDraft.value ? '草稿已保存。' : '发布成功。'
-    setTimeout(() => {
-      router.push('/home')
-    }, 800)
-  } catch (err) {
+    setTimeout(() => router.push('/home'), 700)
+  } catch (error) {
     error.value = '网络错误，请稍后再试。'
   } finally {
     loading.value = false
@@ -156,137 +139,137 @@ onMounted(loadAvailableTags)
 </script>
 
 <template>
-  <div class="post-page">
-    <header class="profile-hero">
-      <div>
-        <span class="hero-tag">内容发布</span>
-        <h1>发布你的校园动态</h1>
-        <p>支持图文链接、话题标签与可见范围设置。</p>
-      </div>
-      <div class="profile-actions">
-        <button class="ghost-btn" type="button" @click="router.push('/home')">返回主页</button>
-      </div>
-    </header>
-
-    <section class="profile-section">
-      <form class="profile-form" @submit.prevent="submit">
-        <div class="grid-2">
-          <label class="field">
-            <span>标题（可选）</span>
-            <input v-model="title" type="text" maxlength="200" placeholder="给内容一个标题" />
-          </label>
-          <label class="field">
-            <span>类型</span>
-            <select v-model="postType">
-              <option value="0">图文动态</option>
-              <option value="1">活动信息</option>
-              <option value="2">投票</option>
-              <option value="3">二手交易</option>
-            </select>
-          </label>
-        </div>
-
-        <label class="field">
-          <span>正文</span>
-          <textarea v-model="content" rows="6" placeholder="分享校园动态、活动、学习经验等" required></textarea>
-        </label>
-
-        <div class="grid-2">
-          <label class="field">
-            <span>可见范围</span>
-            <select v-model="visibility">
-              <option value="0">全校可见</option>
-              <option value="1">仅关注可见</option>
-              <option value="2">仅自己可见</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>位置</span>
-            <input v-model="location" type="text" placeholder="图书馆 / 教学楼" />
-          </label>
-        </div>
-
-        <div class="grid-2">
-          <label class="field">
-            <span>学院</span>
-            <input v-model="college" type="text" placeholder="学院名称" />
-          </label>
-          <label class="field">
-            <span>保存为草稿</span>
-            <select v-model="isDraft">
-              <option :value="false">否</option>
-              <option :value="true">是</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="profile-header">
-          <div>
-            <h2>选择标签</h2>
-            <p>用于推荐和分类。</p>
-          </div>
-        </div>
-        <div class="tag-grid">
-          <label
-            v-for="tag in availableTags"
-            :key="tag.id"
-            class="tag-pill"
-            :class="{ active: selectedTagIds.includes(tag.id) }"
-          >
-            <input
-              v-model="selectedTagIds"
-              type="checkbox"
-              :value="tag.id"
-              class="tag-check"
-            />
-            {{ tag.name }}
-          </label>
-        </div>
-        <div v-if="loadingTags" class="feed-empty">标签加载中...</div>
-        <div v-else-if="!availableTags.length" class="feed-empty">标签库为空，请先配置标签。</div>
-        <p v-if="tagsError" class="form-alert error">{{ tagsError }}</p>
-
-        <div class="profile-header">
-          <div>
-            <h2>媒体上传</h2>
-            <p>从电脑选择图片或视频上传。</p>
-          </div>
-          <button class="ghost-btn" type="button" @click="triggerUpload" :disabled="uploading">
-            {{ uploading ? '上传中...' : '选择文件' }}
-          </button>
-        </div>
-        <input
-          ref="fileInputRef"
-          class="file-input"
-          type="file"
-          multiple
-          accept="image/*,video/*"
-          @change="handleFiles"
-        />
-        <p v-if="uploadError" class="form-alert error">{{ uploadError }}</p>
-        <div class="media-list" v-if="mediaInputs.length">
-          <div v-for="(item, index) in mediaInputs" :key="index" class="media-row">
-            <div class="media-preview-card">
-              <img v-if="item.mediaType === 0" :src="item.url" alt="media" />
-              <a v-else :href="item.url" target="_blank" rel="noreferrer">查看视频</a>
-            </div>
-            <div class="media-meta">
-              <span>类型：{{ item.mediaType === 0 ? '图片' : '视频' }}</span>
-              <span class="muted">{{ item.url }}</span>
-            </div>
-            <button class="ghost-btn danger" type="button" @click="removeMedia(index)">删除</button>
-          </div>
-        </div>
-
-        <div class="profile-actions">
-          <button class="primary-btn" type="submit" :disabled="loading">
-            {{ loading ? '提交中...' : '提交内容' }}
-          </button>
-        </div>
-
-        <p v-if="error" class="form-alert error">{{ error }}</p>
-        <p v-if="success" class="form-alert success">{{ success }}</p>
-      </form>
+  <UserShell section="home">
+    <section class="campus-hero">
+      <span class="campus-hero__eyebrow"><el-icon><PictureFilled /></el-icon>内容发布</span>
+      <h1 class="campus-hero__title">发布新的校园动态</h1>
+      <p class="campus-hero__subtitle">主编辑区专注内容创作，右侧负责可见范围、标签和素材管理，发帖过程更接近主流社区产品。</p>
     </section>
-  </div>
+
+    <div class="campus-editor-grid">
+      <div>
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">内容编辑</h2>
+              <p class="campus-panel__desc">先把正文写顺，再补充标签、位置和媒体素材。</p>
+            </div>
+          </div>
+          <el-form label-position="top">
+            <el-form-item label="标题">
+              <el-input v-model="title" maxlength="200" placeholder="给内容一个明确的标题" show-word-limit />
+            </el-form-item>
+            <el-form-item label="正文">
+              <el-input v-model="content" type="textarea" :rows="14" resize="none" placeholder="分享校园动态、活动信息、学习经验或交易内容..." />
+            </el-form-item>
+          </el-form>
+          <el-alert v-if="error" :title="error" type="error" show-icon />
+          <el-alert v-if="success" :title="success" type="success" show-icon style="margin-top: 12px" />
+        </el-card>
+      </div>
+
+      <aside>
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">发布设置</h2>
+              <p class="campus-panel__desc">统一管理类型、可见范围和草稿状态。</p>
+            </div>
+          </div>
+          <el-form label-position="top">
+            <el-form-item label="内容类型">
+              <el-select v-model="postType">
+                <el-option label="图文动态" :value="0" />
+                <el-option label="活动信息" :value="1" />
+                <el-option label="投票互动" :value="2" />
+                <el-option label="二手交易" :value="3" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="可见范围">
+              <el-select v-model="visibility">
+                <el-option label="全校可见" :value="0" />
+                <el-option label="仅关注可见" :value="1" />
+                <el-option label="仅自己可见" :value="2" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="位置">
+              <el-input v-model="location" placeholder="图书馆 / 教学楼 / 食堂" />
+            </el-form-item>
+            <el-form-item label="学院">
+              <el-input v-model="college" placeholder="学院名称" />
+            </el-form-item>
+            <el-form-item label="保存为草稿">
+              <el-switch v-model="isDraft" inline-prompt active-text="是" inactive-text="否" />
+            </el-form-item>
+          </el-form>
+          <div class="campus-side-list">
+            <div class="campus-side-item">
+              <p class="campus-side-item__title">当前类型</p>
+              <p class="campus-side-item__desc">{{ getPostTypeLabel(postType) }}</p>
+            </div>
+            <div class="campus-side-item">
+              <p class="campus-side-item__title">当前可见范围</p>
+              <p class="campus-side-item__desc">{{ getVisibilityLabel(visibility) }}</p>
+            </div>
+          </div>
+        </el-card>
+
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">内容标签</h2>
+              <p class="campus-panel__desc">标签决定内容被推荐到什么人面前。</p>
+            </div>
+          </div>
+          <el-checkbox-group v-model="selectedTagIds" style="display: flex; flex-wrap: wrap; gap: 12px">
+            <el-checkbox-button v-for="tag in availableTags" :key="tag.id" :value="tag.id">{{ tag.name }}</el-checkbox-button>
+          </el-checkbox-group>
+          <el-empty v-if="!loadingTags && !availableTags.length" description="标签库为空，请先配置标签。" />
+          <el-alert v-if="tagsError" :title="tagsError" type="error" show-icon style="margin-top: 14px" />
+          <div v-if="selectedTagNames.length" class="campus-side-list" style="margin-top: 18px">
+            <div class="campus-side-item">
+              <p class="campus-side-item__title">已选标签</p>
+              <p class="campus-side-item__desc">{{ selectedTagNames.join(' / ') }}</p>
+            </div>
+          </div>
+        </el-card>
+
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">媒体素材</h2>
+              <p class="campus-panel__desc">支持上传图片和视频。</p>
+            </div>
+            <el-button type="primary" plain :loading="uploading" @click="triggerUpload">
+              <el-icon><UploadFilled /></el-icon>
+              选择文件
+            </el-button>
+          </div>
+          <input ref="fileInputRef" class="file-input" type="file" multiple accept="image/*,video/*" @change="handleFiles" />
+          <el-alert v-if="uploadError" :title="uploadError" type="error" show-icon style="margin-bottom: 14px" />
+          <div v-if="mediaInputs.length" class="campus-upload-list">
+            <div v-for="(item, index) in mediaInputs" :key="`${item.url}-${index}`" class="campus-upload-item">
+              <div class="campus-upload-item__preview">
+                <img v-if="item.mediaType === 0" :src="item.url" alt="media" />
+                <span v-else>视频</span>
+              </div>
+              <div>
+                <p class="campus-side-item__title">{{ item.mediaType === 0 ? '图片素材' : '视频素材' }}</p>
+                <p class="campus-side-item__desc">{{ item.url }}</p>
+              </div>
+              <el-button type="danger" plain @click="removeMedia(index)">删除</el-button>
+            </div>
+          </div>
+          <el-empty v-else description="还没有上传素材" />
+        </el-card>
+
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-inline-actions">
+            <el-button type="primary" size="large" :loading="loading" @click="submit">提交内容</el-button>
+            <el-button size="large" plain @click="router.push('/home')">返回首页</el-button>
+          </div>
+        </el-card>
+      </aside>
+    </div>
+  </UserShell>
 </template>

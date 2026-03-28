@@ -1,26 +1,22 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
+import { Bell, Compass, Promotion, StarFilled, SwitchButton } from '@element-plus/icons-vue'
 import { apiFetch } from '../utils/api'
+import { formatSnippet } from '../utils/user'
+import UserShell from '../components/user/UserShell.vue'
+import PostCard from '../components/user/PostCard.vue'
 
 const user = ref(null)
 const role = ref('user')
 const router = useRouter()
-const discoverRef = ref(null)
-
-const displayName = computed(() => {
-  if (user.value?.username) return user.value.username
-  return role.value === 'admin' ? '管理员' : '同学'
-})
-
-const roleLabel = computed(() => (role.value === 'admin' ? '管理员' : '学生'))
 
 const feedType = ref('recommend')
 const feeds = ref([])
 const feedLoading = ref(false)
 const feedError = ref('')
 const page = ref(1)
-const size = ref(9)
+const size = ref(8)
 const total = ref(0)
 
 const tags = ref([])
@@ -40,37 +36,44 @@ const totalPages = computed(() => {
   return pages > 0 ? pages : 1
 })
 
+const displayName = computed(() => user.value?.username || '同学')
+const roleLabel = computed(() => (role.value === 'admin' ? '管理员' : '学生'))
+const activeFeedTab = computed(() => (feedType.value === 'search' ? 'search' : feedType.value))
+const spotlightPost = computed(() => feeds.value[0] || null)
+const sideFeed = computed(() => feeds.value.slice(1, 4))
+const hotTags = computed(() => tags.value.slice(0, 10))
+
 const feedTitle = computed(() => {
   switch (feedType.value) {
     case 'follow':
       return '关注流'
     case 'hot':
-      return '热门内容'
+      return '热议精选'
     case 'latest':
-      return '最新内容'
+      return '最新发布'
     case 'topic':
       return '话题内容'
     case 'search':
       return '搜索结果'
     default:
-      return '推荐流'
+      return '个性推荐'
   }
 })
 
 const emptyHint = computed(() => {
   switch (feedType.value) {
     case 'follow':
-      return '还没有关注任何人，去发现更多同学吧。'
+      return '你还没有形成关注流，先去发现更多同学。'
     case 'topic':
-      return '该话题下暂无内容。'
+      return '这个话题暂时还没有新内容。'
     case 'search':
-      return '没有找到匹配的内容。'
+      return '没有找到匹配的校园动态。'
     case 'hot':
-      return '热门内容暂未生成。'
+      return '当前暂无热议内容。'
     case 'latest':
-      return '暂无最新内容。'
+      return '暂时没有最新发布。'
     default:
-      return '暂无推荐内容。'
+      return '推荐流暂时为空，请稍后刷新。'
   }
 })
 
@@ -78,34 +81,45 @@ const activeTagName = computed(() => {
   const match = tags.value.find((item) => item.id === activeTagId.value)
   return match ? match.name : '话题'
 })
+
 const hotTopicNote = computed(() => {
-  if (!tags.value.length) return '暂无热门话题'
-  const names = tags.value.slice(0, 3).map((item) => item.name)
-  return `热门：${names.join('、')}`
+  if (!tags.value.length) return '等待话题更新'
+  return tags.value
+    .slice(0, 3)
+    .map((item) => item.name)
+    .join(' / ')
 })
 
-const goDiscover = () => {
-  discoverRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-const goRecommend = () => {
-  setFeed('recommend')
-  goDiscover()
+const feedBadge = computed(() => (feedType.value === 'topic' ? `#${activeTagName.value}` : feedTitle.value))
+
+const trackRecommendationClick = async (postId) => {
+  if (feedType.value !== 'recommend' || !postId) return
+  try {
+    await apiFetch('/api/recommendation-logs/click', {
+      method: 'POST',
+      body: JSON.stringify({
+        postId,
+        scene: 0,
+      }),
+    })
+  } catch (error) {
+    // Ignore recommendation tracking failures
+  }
 }
 
-const goHotTopics = () => {
-  feedType.value = 'topic'
-  page.value = 1
-  if (!activeTagId.value && tags.value.length) {
-    activeTagId.value = tags.value[0].id
-  }
-  loadFeed()
-  goDiscover()
+const openPost = (postId) => {
+  trackRecommendationClick(postId)
+  router.push(`/posts/${postId}`)
+}
+
+const handleRecommendedPostOpen = (post) => {
+  trackRecommendationClick(post?.id)
 }
 
 const logout = async () => {
   try {
     await apiFetch('/api/auth/logout', { method: 'POST' })
-  } catch (err) {
+  } catch (error) {
     // Ignore network errors on logout
   } finally {
     localStorage.removeItem('auth_token')
@@ -113,20 +127,6 @@ const logout = async () => {
     localStorage.removeItem('auth_role')
     router.push('/login')
   }
-}
-
-const normalizeStatus = (status) => {
-  if (status === 0) return { label: '待审', className: 'pending' }
-  if (status === 1) return { label: '通过', className: 'approved' }
-  if (status === 2) return { label: '驳回', className: 'rejected' }
-  return { label: '草稿', className: 'draft' }
-}
-
-const formatSnippet = (text) => {
-  if (!text) return '暂无内容'
-  const clean = text.replace(/\s+/g, ' ').trim()
-  if (clean.length <= 90) return clean
-  return `${clean.slice(0, 90)}...`
 }
 
 const loadTags = async () => {
@@ -144,7 +144,10 @@ const loadTags = async () => {
       return
     }
     tags.value = data.data || []
-  } catch (err) {
+    if (!activeTagId.value && tags.value.length) {
+      activeTagId.value = tags.value[0].id
+    }
+  } catch (error) {
     tagError.value = '网络错误，无法获取话题列表。'
   } finally {
     tagLoading.value = false
@@ -159,12 +162,10 @@ const loadUnreadCount = async () => {
       return
     }
     const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      return
-    }
+    if (!res.ok || data.code !== 0) return
     unreadCount.value = data.data ?? 0
-  } catch (err) {
-    // ignore
+  } catch (error) {
+    // Ignore
   }
 }
 
@@ -177,16 +178,15 @@ const loadRecommendSummary = async () => {
       return
     }
     const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      return
-    }
+    if (!res.ok || data.code !== 0) return
     recommendTotal.value = data.data?.total ?? 0
-  } catch (err) {
-    // ignore
+  } catch (error) {
+    // Ignore
   } finally {
     recommendLoading.value = false
   }
 }
+
 const loadFeed = async () => {
   feedLoading.value = true
   feedError.value = ''
@@ -206,7 +206,7 @@ const loadFeed = async () => {
       if (!activeTagId.value) {
         feeds.value = []
         total.value = 0
-        feedError.value = '请选择一个话题标签。'
+        feedError.value = '请选择一个话题。'
         return
       }
       endpoint = '/api/posts/topic'
@@ -217,16 +217,12 @@ const loadFeed = async () => {
       if (!keyword && !resolvedTagId) {
         feeds.value = []
         total.value = 0
-        feedError.value = '请输入关键词或选择话题标签。'
+        feedError.value = '请输入关键词或选择一个话题。'
         return
       }
       endpoint = '/api/posts/search'
-      if (keyword) {
-        params.set('keyword', keyword)
-      }
-      if (resolvedTagId) {
-        params.set('tagId', resolvedTagId.toString())
-      }
+      if (keyword) params.set('keyword', keyword)
+      if (resolvedTagId) params.set('tagId', resolvedTagId.toString())
     }
 
     const res = await apiFetch(`${endpoint}?${params.toString()}`)
@@ -241,7 +237,7 @@ const loadFeed = async () => {
     }
     feeds.value = data.data?.list || []
     total.value = data.data?.total ?? 0
-  } catch (err) {
+  } catch (error) {
     feedError.value = '网络错误，无法获取内容。'
   } finally {
     feedLoading.value = false
@@ -251,7 +247,15 @@ const loadFeed = async () => {
 const setFeed = (type) => {
   feedType.value = type
   page.value = 1
+  if (type === 'topic' && !activeTagId.value && tags.value.length) {
+    activeTagId.value = tags.value[0].id
+  }
   loadFeed()
+}
+
+const handleFeedTab = (type) => {
+  if (type === 'search') return
+  setFeed(type)
 }
 
 const selectTopic = (tagId) => {
@@ -270,36 +274,21 @@ const submitSearch = () => {
 const resetSearch = () => {
   searchKeyword.value = ''
   searchTagId.value = ''
-  if (feedType.value === 'search') {
-    setFeed('recommend')
-  }
+  setFeed('recommend')
 }
 
-const nextPage = () => {
-  if (page.value < totalPages.value) {
-    page.value += 1
-    loadFeed()
-  }
-}
-
-const prevPage = () => {
-  if (page.value > 1) {
-    page.value -= 1
-    loadFeed()
-  }
+const handlePageChange = (current) => {
+  page.value = current
+  loadFeed()
 }
 
 onMounted(() => {
   try {
     const savedUser = localStorage.getItem('auth_user')
-    if (savedUser) {
-      user.value = JSON.parse(savedUser)
-    }
+    if (savedUser) user.value = JSON.parse(savedUser)
     const savedRole = localStorage.getItem('auth_role')
-    if (savedRole) {
-      role.value = savedRole
-    }
-  } catch (err) {
+    if (savedRole) role.value = savedRole
+  } catch (error) {
     user.value = null
   }
   loadTags()
@@ -310,168 +299,256 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="home-page">
-    <header class="home-hero">
-      <div class="hero-left">
-        <span class="hero-tag">校园社交推荐平台</span>
-        <h1>欢迎回来，{{ displayName }}。</h1>
-        <p>
-          这里是你的个性化校园主页，聚合最新动态、热门话题与推荐内容。
+  <UserShell section="home">
+    <section class="campus-hero campus-hero--feed">
+      <div>
+        <span class="campus-hero__eyebrow">
+          <el-icon><Compass /></el-icon>
+          校园内容广场
+        </span>
+        <h1 class="campus-hero__title">欢迎回来，{{ displayName }}。</h1>
+        <p class="campus-hero__subtitle">
+          这里以内容浏览为中心，聚合推荐、关注、热议与话题流。你可以先快速扫一遍重点内容，再进入详情深度互动。
         </p>
-        <div class="hero-actions">
-          <RouterLink class="primary-btn" to="/posts/create">发布内容</RouterLink>
-          <button class="ghost-btn" type="button" @click="goDiscover">去发现</button>
-          <button class="ghost-btn" type="button" @click="logout">退出登录</button>
+        <div class="campus-hero__actions">
+          <el-button type="primary" size="large" @click="router.push('/posts/create')">
+            发布校园动态
+          </el-button>
+          <el-button size="large" plain @click="setFeed('recommend')">刷新推荐流</el-button>
+          <el-button size="large" plain @click="router.push('/social')">
+            <el-icon><Bell /></el-icon>
+            查看消息
+          </el-button>
+          <el-button size="large" plain @click="logout">
+            <el-icon><SwitchButton /></el-icon>
+            退出登录
+          </el-button>
         </div>
-        <div class="hero-meta">
-          <span>当前角色：<strong>{{ roleLabel }}</strong></span>
-          <span v-if="role === 'admin'" class="badge">管理入口待开发</span>
-        </div>
-      </div>
-      <div class="hero-right">
-        <div
-          class="stat-card link-card"
-          role="button"
-          tabindex="0"
-          @click="goRecommend"
-          @keydown.enter="goRecommend"
-        >
-          <p class="stat-label">今日推荐</p>
-          <p class="stat-value">{{ recommendLoading ? '...' : recommendTotal }}</p>
-          <p class="stat-note">点击查看推荐流</p>
-        </div>
-        <div
-          class="stat-card link-card"
-          role="button"
-          tabindex="0"
-          @click="goHotTopics"
-          @keydown.enter="goHotTopics"
-        >
-          <p class="stat-label">热门话题</p>
-          <p class="stat-value">{{ tagLoading ? '...' : tags.length }}</p>
-          <p class="stat-note">{{ hotTopicNote }}</p>
-        </div>
-        <div class="stat-card link-card" role="button" tabindex="0" @click="router.push('/social')" @keydown.enter="router.push('/social')">
-          <p class="stat-label">互动提醒</p>
-          <p class="stat-value">{{ unreadCount }}</p>
-          <p class="stat-note">未读通知实时更新</p>
-        </div>
-      </div>
-    </header>
-
-    <section class="module-grid">
-      <article class="module-card">
-        <h3>内容推荐</h3>
-        <p>基于兴趣标签与行为偏好推送内容。</p>
-        <span class="module-tag">推荐流</span>
-      </article>
-      <article class="module-card">
-        <h3>校园动态</h3>
-        <p>聚合学院、社团、活动等最新发布。</p>
-        <span class="module-tag">动态广场</span>
-      </article>
-      <RouterLink class="module-card link-card" to="/social">
-        <h3>互动社交</h3>
-        <p>点赞评论、关注关系与消息提醒。</p>
-        <span class="module-tag">社交连接</span>
-      </RouterLink>
-      <RouterLink class="module-card link-card" to="/profile">
-        <h3>个人中心</h3>
-        <p>个人资料、兴趣标签与内容管理。</p>
-        <span class="module-tag">个人档案</span>
-      </RouterLink>
-    </section>
-
-    <section ref="discoverRef" class="profile-section discover-section">
-      <div class="profile-header">
-        <div>
-          <h2>内容发现</h2>
-          <p>推荐、关注、热门、话题与搜索一站式浏览。</p>
-        </div>
-        <div class="discover-actions">
-          <button class="ghost-btn" type="button" @click="setFeed('recommend')">刷新推荐</button>
-          <RouterLink class="ghost-btn" to="/posts/create">去发布</RouterLink>
+        <div class="campus-hero__chips">
+          <el-tag round effect="light">当前身份：{{ roleLabel }}</el-tag>
+          <el-tag round effect="plain" type="success">今日推荐 {{ recommendLoading ? '...' : recommendTotal }}</el-tag>
+          <el-tag round effect="plain" type="warning">热门话题 {{ tags.length }}</el-tag>
+          <el-tag round effect="plain" type="info">未读提醒 {{ unreadCount }}</el-tag>
         </div>
       </div>
 
-      <form class="discover-search" @submit.prevent="submitSearch">
-        <label class="field">
-          关键词
-          <input v-model="searchKeyword" type="text" placeholder="输入标题或正文关键词" />
-        </label>
-        <label class="field">
-          话题
-          <select v-model="searchTagId">
-            <option value="">全部话题</option>
-            <option v-for="tag in tags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
-          </select>
-        </label>
-        <button class="primary-btn" type="submit">搜索</button>
-        <button class="ghost-btn" type="button" @click="resetSearch">重置</button>
-      </form>
-
-      <div class="tabs">
-        <button class="tab-btn" :class="{ active: feedType === 'recommend' }" type="button" @click="setFeed('recommend')">推荐</button>
-        <button class="tab-btn" :class="{ active: feedType === 'follow' }" type="button" @click="setFeed('follow')">关注</button>
-        <button class="tab-btn" :class="{ active: feedType === 'hot' }" type="button" @click="setFeed('hot')">热门</button>
-        <button class="tab-btn" :class="{ active: feedType === 'latest' }" type="button" @click="setFeed('latest')">最新</button>
-        <button class="tab-btn" :class="{ active: feedType === 'topic' }" type="button" @click="setFeed('topic')">话题</button>
-        <button v-if="feedType === 'search'" class="tab-btn active" type="button">搜索结果</button>
-      </div>
-
-      <div v-if="feedType === 'topic'" class="tag-grid">
-        <button
-          v-for="tag in tags"
-          :key="tag.id"
-          class="tag-pill"
-          :class="{ active: activeTagId === tag.id }"
-          type="button"
-          @click="selectTopic(tag.id)"
-        >
-          {{ tag.name }}
-        </button>
-      </div>
-
-      <div v-if="tagLoading && feedType === 'topic'" class="feed-empty">话题加载中...</div>
-      <div v-else-if="tagError && feedType === 'topic'" class="form-alert error">{{ tagError }}</div>
-
-      <div v-if="feedLoading" class="feed-empty">内容加载中...</div>
-      <div v-else-if="feedError" class="form-alert error">{{ feedError }}</div>
-      <div v-else-if="feeds.length" class="feed-grid">
-        <article v-for="post in feeds" :key="post.id" class="feed-item">
-          <div class="feed-item-top">
-            <span class="feed-label">{{ feedType === 'topic' ? `#${activeTagName}` : feedTitle }}</span>
-            <span class="status-pill" :class="normalizeStatus(post.status).className">
-              {{ normalizeStatus(post.status).label }}
-            </span>
-          </div>
-          <h4>{{ post.title || '未命名内容' }}</h4>
-          <p>{{ formatSnippet(post.content) }}</p>
-          <div class="feed-meta">
-            <span>点赞 {{ post.likeCount ?? 0 }}</span>
-            <span>评论 {{ post.commentCount ?? 0 }}</span>
-            <span>收藏 {{ post.favoriteCount ?? 0 }}</span>
-            <span>浏览 {{ post.viewCount ?? 0 }}</span>
-          </div>
-          <div class="feed-meta">
-            <span>发布于 {{ post.createdAt || '-' }}</span>
-            <span v-if="post.college">学院：{{ post.college }}</span>
-            <span v-if="post.location">位置：{{ post.location }}</span>
-          </div>
-          <div class="feed-actions">
-            <RouterLink class="ghost-btn" :to="`/posts/${post.id}`">查看详情</RouterLink>
-          </div>
-        </article>
-      </div>
-      <div v-else class="feed-empty">{{ emptyHint }}</div>
-
-      <div class="pager">
-        <button class="ghost-btn" type="button" :disabled="page <= 1 || feedLoading" @click="prevPage">上一页</button>
-        <span>第 {{ page }} / {{ totalPages }} 页 · 共 {{ total }} 条</span>
-        <button class="ghost-btn" type="button" :disabled="page >= totalPages || feedLoading" @click="nextPage">下一页</button>
+      <div class="campus-hero__stats">
+        <el-card class="campus-stat-card" shadow="hover" @click="setFeed('recommend')">
+          <p class="campus-stat-card__label">推荐池</p>
+          <p class="campus-stat-card__value">{{ recommendLoading ? '...' : recommendTotal }}</p>
+          <p class="campus-stat-card__note">根据兴趣和行为持续更新</p>
+        </el-card>
+        <el-card class="campus-stat-card" shadow="hover" @click="setFeed('topic')">
+          <p class="campus-stat-card__label">热门话题</p>
+          <p class="campus-stat-card__value">{{ tagLoading ? '...' : tags.length }}</p>
+          <p class="campus-stat-card__note">{{ hotTopicNote }}</p>
+        </el-card>
+        <el-card class="campus-stat-card" shadow="hover" @click="router.push('/social')">
+          <p class="campus-stat-card__label">互动提醒</p>
+          <p class="campus-stat-card__value">{{ unreadCount }}</p>
+          <p class="campus-stat-card__note">评论、关注、系统通知集中查看</p>
+        </el-card>
       </div>
     </section>
 
-  </div>
+    <div class="campus-grid">
+      <div>
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">精确检索</h2>
+              <p class="campus-panel__desc">按关键词和话题筛选，快速进入你真正想看的内容。</p>
+            </div>
+          </div>
+
+          <form class="campus-search-grid" @submit.prevent="submitSearch">
+            <el-input
+              v-model="searchKeyword"
+              clearable
+              size="large"
+              placeholder="搜索标题、正文、活动信息"
+            />
+            <el-select v-model="searchTagId" size="large" clearable placeholder="全部话题">
+              <el-option
+                v-for="tag in tags"
+                :key="tag.id"
+                :label="tag.name"
+                :value="String(tag.id)"
+              />
+            </el-select>
+            <el-button type="primary" size="large" native-type="submit">
+              <el-icon><Promotion /></el-icon>
+              开始搜索
+            </el-button>
+            <el-button size="large" plain @click="resetSearch">重置</el-button>
+          </form>
+        </el-card>
+
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">{{ feedTitle }}</h2>
+              <p class="campus-panel__desc">
+                当前共 {{ total }} 条内容，优先展示适合连续浏览的卡片流布局。
+              </p>
+            </div>
+            <el-tag round effect="dark">{{ feedBadge }}</el-tag>
+          </div>
+
+          <el-tabs :model-value="activeFeedTab" @tab-change="handleFeedTab">
+            <el-tab-pane label="推荐" name="recommend" />
+            <el-tab-pane label="关注" name="follow" />
+            <el-tab-pane label="热议" name="hot" />
+            <el-tab-pane label="最新" name="latest" />
+            <el-tab-pane label="话题" name="topic" />
+            <el-tab-pane v-if="feedType === 'search'" label="搜索结果" name="search" />
+          </el-tabs>
+
+          <div v-if="feedType === 'topic'" class="campus-topic-row">
+            <el-button
+              v-for="tag in tags"
+              :key="tag.id"
+              :type="activeTagId === tag.id ? 'primary' : 'default'"
+              plain
+              round
+              @click="selectTopic(tag.id)"
+            >
+              # {{ tag.name }}
+            </el-button>
+          </div>
+
+          <el-alert
+            v-if="tagError && feedType === 'topic'"
+            :title="tagError"
+            type="error"
+            show-icon
+            class="mb-4"
+          />
+          <el-alert v-if="feedError" :title="feedError" type="error" show-icon class="mb-4" />
+
+          <div v-if="feedLoading" class="campus-card-grid">
+            <el-skeleton v-for="index in 4" :key="index" animated>
+              <template #template>
+                <el-card class="campus-post-card">
+                  <el-skeleton-item variant="h3" style="width: 46%; margin-bottom: 16px" />
+                  <el-skeleton-item variant="text" style="width: 90%; margin-bottom: 10px" />
+                  <el-skeleton-item variant="text" style="width: 100%; margin-bottom: 10px" />
+                  <el-skeleton-item variant="text" style="width: 82%" />
+                </el-card>
+              </template>
+            </el-skeleton>
+          </div>
+          <div v-else-if="feeds.length" class="campus-post-grid">
+            <PostCard
+              v-for="post in feeds"
+              :key="post.id"
+              :post="post"
+              :badge="feedType === 'topic' ? `#${activeTagName}` : feedTitle"
+              @open="handleRecommendedPostOpen"
+            />
+          </div>
+          <el-empty v-else :description="emptyHint" />
+
+          <div v-if="total > size" style="margin-top: 22px">
+            <el-pagination
+              background
+              layout="prev, pager, next, jumper, ->, total"
+              :current-page="page"
+              :page-size="size"
+              :total="total"
+              @current-change="handlePageChange"
+            />
+          </div>
+        </el-card>
+      </div>
+
+      <aside>
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">焦点内容</h2>
+              <p class="campus-panel__desc">当前流中最值得优先打开的一条。</p>
+            </div>
+            <el-icon size="20"><StarFilled /></el-icon>
+          </div>
+
+          <div v-if="spotlightPost" class="campus-highlight">
+            <el-tag round type="success" effect="light">{{ feedBadge }}</el-tag>
+            <h3 class="campus-highlight__title">{{ spotlightPost.title || '未命名内容' }}</h3>
+            <p class="campus-panel__desc">{{ formatSnippet(spotlightPost.content, 140) }}</p>
+            <div class="campus-highlight__meta">
+              <span>点赞 {{ spotlightPost.likeCount ?? 0 }}</span>
+              <span>评论 {{ spotlightPost.commentCount ?? 0 }}</span>
+              <span>浏览 {{ spotlightPost.viewCount ?? 0 }}</span>
+            </div>
+            <div class="campus-inline-actions" style="margin-top: 18px">
+              <el-button type="primary" @click="openPost(spotlightPost.id)">
+                阅读详情
+              </el-button>
+            </div>
+          </div>
+          <el-empty v-else description="暂无焦点内容" />
+
+          <div v-if="sideFeed.length" class="campus-side-list" style="margin-top: 18px">
+            <div v-for="item in sideFeed" :key="item.id" class="campus-side-item">
+              <p class="campus-side-item__title">{{ item.title || '未命名内容' }}</p>
+              <p class="campus-side-item__desc">{{ formatSnippet(item.content, 70) }}</p>
+              <el-button text type="primary" @click="openPost(item.id)">
+                继续阅读
+              </el-button>
+            </div>
+          </div>
+        </el-card>
+
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">热度话题</h2>
+              <p class="campus-panel__desc">更适合连续刷看的校园主题入口。</p>
+            </div>
+          </div>
+
+          <div class="campus-topic-row">
+            <el-button
+              v-for="tag in hotTags"
+              :key="tag.id"
+              plain
+              round
+              @click="selectTopic(tag.id)"
+            >
+              # {{ tag.name }}
+            </el-button>
+          </div>
+          <el-empty v-if="!tagLoading && !hotTags.length" description="暂未配置热门话题" />
+        </el-card>
+
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">快捷入口</h2>
+              <p class="campus-panel__desc">以浏览和互动为中心的高频操作。</p>
+            </div>
+          </div>
+
+          <div class="campus-side-list">
+            <div class="campus-side-item">
+              <p class="campus-side-item__title">互动中心</p>
+              <p class="campus-side-item__desc">通知、公告、举报进度统一处理。</p>
+              <el-button text type="primary" @click="router.push('/social')">进入互动中心</el-button>
+            </div>
+            <div class="campus-side-item">
+              <p class="campus-side-item__title">我的空间</p>
+              <p class="campus-side-item__desc">维护资料、偏好标签和个人内容资产。</p>
+              <el-button text type="primary" @click="router.push('/profile')">查看个人空间</el-button>
+            </div>
+            <div class="campus-side-item">
+              <p class="campus-side-item__title">发布新内容</p>
+              <p class="campus-side-item__desc">支持图文、活动、投票和二手信息。</p>
+              <el-button text type="primary" @click="router.push('/posts/create')">去发布</el-button>
+            </div>
+          </div>
+        </el-card>
+      </aside>
+    </div>
+  </UserShell>
 </template>
-

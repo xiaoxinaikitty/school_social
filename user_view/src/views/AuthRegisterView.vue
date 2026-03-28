@@ -85,7 +85,7 @@ const submit = async () => {
       <section class="auth-hero">
         <div class="brand">
           <span class="brand-dot"></span>
-          <span class="brand-name">校园脉搏</span>
+          <span class="brand-name">校园社交平台</span>
         </div>
         <p class="eyebrow">学生注册</p>
         <h1 class="hero-title">创建你的校园账号。</h1>
