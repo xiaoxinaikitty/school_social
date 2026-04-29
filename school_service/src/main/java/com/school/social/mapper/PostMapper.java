@@ -27,6 +27,8 @@ public interface PostMapper {
 
     int countByStatus(@Param("status") Integer status);
 
+    List<Post> selectApprovedAll();
+
     List<Post> selectRecommendPaged(@Param("offset") int offset,
                                     @Param("size") int size);
 
@@ -80,4 +82,6 @@ public interface PostMapper {
 
     int decreaseCommentCountBy(@Param("postId") Long postId,
                                @Param("amount") int amount);
+
+    int increaseViewCount(@Param("postId") Long postId);
 }

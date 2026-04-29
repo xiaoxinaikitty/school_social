@@ -1,41 +1,46 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
+import { Flag, Promotion, Star, Position } from '@element-plus/icons-vue'
 import { apiFetch } from '../utils/api'
+import { formatSnippet, getInitial, getPostTypeLabel, getStatusMeta, getVisibilityLabel } from '../utils/user'
+import UserShell from '../components/user/UserShell.vue'
+import PostCard from '../components/user/PostCard.vue'
 
 const route = useRoute()
 const router = useRouter()
 const detail = ref(null)
+const stats = ref(null)
+const related = ref([])
+const comments = ref([])
+const currentUser = ref(null)
+
 const loading = ref(false)
 const error = ref('')
-const related = ref([])
 const relatedLoading = ref(false)
 const relatedError = ref('')
-const stats = ref(null)
 const statsLoading = ref(false)
 const statsError = ref('')
+const commentsLoading = ref(false)
+const commentSubmitting = ref(false)
+const commentError = ref('')
 
-const currentUser = ref(null)
+const commentContent = ref('')
+const commentPage = ref(1)
+const commentTotal = ref(0)
+const commentSize = 8
+const replyMap = ref({})
+const replyDrafts = ref({})
+const commentLikeMap = ref({})
+const activeEmojiTarget = ref('')
+const emojiList = ['😀', '😁', '😂', '😊', '😍', '🥳', '😎', '🤔', '😭', '😡', '👍', '👏', '🎉', '❤️', '🔥', '🌟']
+
 const liked = ref(false)
 const favorited = ref(false)
 const following = ref(false)
 const actionError = ref('')
 const actionSuccess = ref('')
-
-const commentContent = ref('')
-const commentLoading = ref(false)
-const commentError = ref('')
-const comments = ref([])
-const commentPage = ref(1)
-const commentSize = 8
-const commentTotal = ref(0)
-
-const replyMap = ref({})
-const replyDrafts = ref({})
-const commentLikeMap = ref({})
-const activeEmojiTarget = ref('')
-
-const emojiList = ['😀', '😁', '😂', '😊', '😍', '🥳', '😎', '🤔', '😭', '😡', '👍', '👏', '🎉', '❤️', '🔥', '🌟']
 
 const showReportForm = ref(false)
 const reportTarget = ref({ targetType: 0, targetId: null })
@@ -44,187 +49,39 @@ const reportDetail = ref('')
 const reportLoading = ref(false)
 const reportError = ref('')
 const reportSuccess = ref('')
-const reportSectionRef = ref(null)
-const reportManual = ref(false)
+const reportReasons = ['不实信息', '骚扰辱骂', '色情低俗', '违规广告', '侵犯隐私', '其他']
 
-const reportReasons = [
-  '不实信息',
-  '骚扰辱骂',
-  '色情低俗',
-  '违规广告',
-  '侵犯隐私',
-  '其他',
-]
-
-const isOwner = computed(() => {
-  if (!currentUser.value || !detail.value) return false
-  return Number(currentUser.value.id) === Number(detail.value.userId)
-})
-
-const loadDetail = async () => {
-  loading.value = true
-  error.value = ''
-  try {
-    const res = await apiFetch(`/api/posts/${route.params.id}`)
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      error.value = data.message || '获取详情失败。'
-      return
-    }
-    detail.value = data.data
-    await Promise.all([loadRelated(), loadStats(), loadComments(1)])
-  } catch (err) {
-    error.value = '网络错误，无法获取详情。'
-  } finally {
-    loading.value = false
-  }
-}
-
-const loadStats = async () => {
-  statsLoading.value = true
-  statsError.value = ''
-  try {
-    const res = await apiFetch(`/api/posts/${route.params.id}/stats`)
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      statsError.value = data.message || '获取统计失败。'
-      return
-    }
-    stats.value = data.data
-  } catch (err) {
-    statsError.value = '网络错误，无法获取统计。'
-  } finally {
-    statsLoading.value = false
-  }
-}
-
-const loadRelated = async () => {
-  relatedLoading.value = true
-  relatedError.value = ''
-  try {
-    const res = await apiFetch(`/api/posts/${route.params.id}/related`)
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      relatedError.value = data.message || '获取相关推荐失败。'
-      return
-    }
-    related.value = data.data || []
-  } catch (err) {
-    relatedError.value = '网络错误，无法获取相关推荐。'
-  } finally {
-    relatedLoading.value = false
-  }
-}
-
-const loadComments = async (page = 1) => {
-  commentLoading.value = true
-  commentError.value = ''
-  try {
-    const res = await apiFetch(
-      `/api/comments?postId=${route.params.id}&page=${page}&size=${commentSize}`,
-    )
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      commentError.value = data.message || '获取评论失败。'
-      return
-    }
-    comments.value = data.data?.list || []
-    commentTotal.value = data.data?.total ?? 0
-    commentPage.value = data.data?.page ?? page
-  } catch (err) {
-    commentError.value = '网络错误，无法获取评论。'
-  } finally {
-    commentLoading.value = false
-  }
-}
-
-const loadReplies = async (parentId) => {
-  if (!parentId) return
-  replyMap.value = {
-    ...replyMap.value,
-    [parentId]: {
-      ...(replyMap.value[parentId] || {}),
-      loading: true,
-      error: '',
-      expanded: true,
-    },
-  }
-  try {
-    const res = await apiFetch(
-      `/api/comments?postId=${route.params.id}&parentId=${parentId}&page=1&size=20`,
-    )
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
-    const data = await res.json()
-    if (!res.ok || data.code !== 0) {
-      replyMap.value = {
-        ...replyMap.value,
-        [parentId]: {
-          ...(replyMap.value[parentId] || {}),
-          loading: false,
-          error: data.message || '获取回复失败。',
-          expanded: true,
-        },
-      }
-      return
-    }
-    replyMap.value = {
-      ...replyMap.value,
-      [parentId]: {
-        list: data.data?.list || [],
-        total: data.data?.total ?? 0,
-        loading: false,
-        error: '',
-        expanded: true,
-      },
-    }
-  } catch (err) {
-    replyMap.value = {
-      ...replyMap.value,
-      [parentId]: {
-        ...(replyMap.value[parentId] || {}),
-        loading: false,
-        error: '网络错误，无法获取回复。',
-        expanded: true,
-      },
-    }
-  }
-}
-
-const toggleReplies = (parentId) => {
-  const existing = replyMap.value[parentId]
-  if (existing?.expanded) {
-    replyMap.value = {
-      ...replyMap.value,
-      [parentId]: {
-        ...existing,
-        expanded: false,
-      },
-    }
-    return
-  }
-  loadReplies(parentId)
-}
+const isOwner = computed(() => Number(currentUser.value?.id) === Number(detail.value?.userId))
+const statusMeta = computed(() => getStatusMeta(detail.value?.status))
+const authorName = computed(() => detail.value?.username || `用户 ${detail.value?.userId ?? ''}`)
+const authorInitial = computed(() => getInitial(authorName.value, '校'))
+const mediaPreviewUrls = computed(() => (detail.value?.media || []).filter((item) => item.mediaType === 0).map((item) => item.url))
 
 const getReplyEmojiTarget = (parentId) => `reply-${parentId}`
+
+const resetState = () => {
+  liked.value = false
+  favorited.value = false
+  following.value = false
+  replyMap.value = {}
+  replyDrafts.value = {}
+  commentLikeMap.value = {}
+  activeEmojiTarget.value = ''
+  showReportForm.value = false
+  reportTarget.value = { targetType: 0, targetId: null }
+  reportReason.value = ''
+  reportDetail.value = ''
+  reportError.value = ''
+  reportSuccess.value = ''
+}
+
+const authGuard = (res) => {
+  if (res.status === 401) {
+    router.push('/login')
+    return true
+  }
+  return false
+}
 
 const toggleEmojiPicker = (target) => {
   activeEmojiTarget.value = activeEmojiTarget.value === target ? '' : target
@@ -246,29 +103,123 @@ const insertEmoji = (emoji, target) => {
   }
 }
 
-const submitComment = async () => {
+const loadStats = async () => {
+  statsLoading.value = true
+  statsError.value = ''
+  try {
+    const res = await apiFetch(`/api/posts/${route.params.id}/stats`)
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      statsError.value = data.message || '获取统计失败。'
+      return
+    }
+    stats.value = data.data
+  } catch (error) {
+    statsError.value = '网络错误，无法获取统计。'
+  } finally {
+    statsLoading.value = false
+  }
+}
+
+const loadRelated = async () => {
+  relatedLoading.value = true
+  relatedError.value = ''
+  try {
+    const res = await apiFetch(`/api/posts/${route.params.id}/related`)
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      relatedError.value = data.message || '获取相关推荐失败。'
+      return
+    }
+    related.value = data.data || []
+  } catch (error) {
+    relatedError.value = '网络错误，无法获取相关推荐。'
+  } finally {
+    relatedLoading.value = false
+  }
+}
+
+const loadComments = async (page = 1) => {
+  commentsLoading.value = true
   commentError.value = ''
-  actionSuccess.value = ''
-  actionError.value = ''
-  const content = commentContent.value.trim()
-  if (!content) {
+  try {
+    const res = await apiFetch(`/api/comments?postId=${route.params.id}&page=${page}&size=${commentSize}`)
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      commentError.value = data.message || '获取评论失败。'
+      return
+    }
+    comments.value = data.data?.list || []
+    commentTotal.value = data.data?.total ?? 0
+    commentPage.value = data.data?.page ?? page
+  } catch (error) {
+    commentError.value = '网络错误，无法获取评论。'
+  } finally {
+    commentsLoading.value = false
+  }
+}
+
+const loadDetail = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const res = await apiFetch(`/api/posts/${route.params.id}`)
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      error.value = data.message || '获取详情失败。'
+      return
+    }
+    detail.value = data.data
+    await Promise.all([loadStats(), loadRelated(), loadComments(1)])
+  } catch (error) {
+    error.value = '网络错误，无法获取详情。'
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadReplies = async (parentId) => {
+  replyMap.value = { ...replyMap.value, [parentId]: { ...(replyMap.value[parentId] || {}), loading: true, expanded: true, error: '' } }
+  try {
+    const res = await apiFetch(`/api/comments?postId=${route.params.id}&parentId=${parentId}&page=1&size=20`)
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      replyMap.value = { ...replyMap.value, [parentId]: { ...(replyMap.value[parentId] || {}), loading: false, expanded: true, error: data.message || '获取回复失败。' } }
+      return
+    }
+    replyMap.value = { ...replyMap.value, [parentId]: { list: data.data?.list || [], loading: false, expanded: true, error: '' } }
+  } catch (error) {
+    replyMap.value = { ...replyMap.value, [parentId]: { ...(replyMap.value[parentId] || {}), loading: false, expanded: true, error: '网络错误，无法获取回复。' } }
+  }
+}
+
+const toggleReplies = (parentId) => {
+  const current = replyMap.value[parentId]
+  if (current?.expanded) {
+    replyMap.value = { ...replyMap.value, [parentId]: { ...current, expanded: false } }
+    return
+  }
+  loadReplies(parentId)
+}
+
+const submitComment = async () => {
+  if (!commentContent.value.trim()) {
     commentError.value = '请输入评论内容。'
     return
   }
-  commentLoading.value = true
+  commentSubmitting.value = true
+  commentError.value = ''
   try {
     const res = await apiFetch('/api/comments', {
       method: 'POST',
-      body: JSON.stringify({
-        postId: Number(route.params.id),
-        content,
-        parentId: null,
-      }),
+      body: JSON.stringify({ postId: Number(route.params.id), content: commentContent.value.trim(), parentId: null }),
     })
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
+    if (authGuard(res)) return
     const data = await res.json()
     if (!res.ok || data.code !== 0) {
       commentError.value = data.message || '发表评论失败。'
@@ -278,59 +229,29 @@ const submitComment = async () => {
     activeEmojiTarget.value = ''
     await Promise.all([loadComments(1), loadStats()])
     actionSuccess.value = '评论已发布。'
-  } catch (err) {
+  } catch (error) {
     commentError.value = '网络错误，无法发表评论。'
   } finally {
-    commentLoading.value = false
+    commentSubmitting.value = false
   }
 }
 
 const submitReply = async (parentId) => {
-  if (!parentId) return
-  const draft = replyDrafts.value[parentId] || ''
-  const content = draft.trim()
+  const content = (replyDrafts.value[parentId] || '').trim()
   if (!content) {
-    replyMap.value = {
-      ...replyMap.value,
-      [parentId]: {
-        ...(replyMap.value[parentId] || {}),
-        error: '请输入回复内容。',
-      },
-    }
+    replyMap.value = { ...replyMap.value, [parentId]: { ...(replyMap.value[parentId] || {}), error: '请输入回复内容。' } }
     return
   }
-  replyMap.value = {
-    ...replyMap.value,
-    [parentId]: {
-      ...(replyMap.value[parentId] || {}),
-      loading: true,
-      error: '',
-    },
-  }
+  replyMap.value = { ...replyMap.value, [parentId]: { ...(replyMap.value[parentId] || {}), loading: true, error: '' } }
   try {
     const res = await apiFetch('/api/comments', {
       method: 'POST',
-      body: JSON.stringify({
-        postId: Number(route.params.id),
-        content,
-        parentId,
-      }),
+      body: JSON.stringify({ postId: Number(route.params.id), content, parentId }),
     })
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
+    if (authGuard(res)) return
     const data = await res.json()
     if (!res.ok || data.code !== 0) {
-      replyMap.value = {
-        ...replyMap.value,
-        [parentId]: {
-          ...(replyMap.value[parentId] || {}),
-          loading: false,
-          error: data.message || '回复失败。',
-          expanded: true,
-        },
-      }
+      replyMap.value = { ...replyMap.value, [parentId]: { ...(replyMap.value[parentId] || {}), loading: false, error: data.message || '回复失败。', expanded: true } }
       return
     }
     replyDrafts.value = { ...replyDrafts.value, [parentId]: '' }
@@ -338,256 +259,142 @@ const submitReply = async (parentId) => {
       activeEmojiTarget.value = ''
     }
     await Promise.all([loadReplies(parentId), loadStats()])
-  } catch (err) {
-    replyMap.value = {
-      ...replyMap.value,
-      [parentId]: {
-        ...(replyMap.value[parentId] || {}),
-        loading: false,
-        error: '网络错误，无法回复。',
-        expanded: true,
-      },
-    }
-  } finally {
-    replyMap.value = {
-      ...replyMap.value,
-      [parentId]: {
-        ...(replyMap.value[parentId] || {}),
-        loading: false,
-        expanded: true,
-      },
-    }
+  } catch (error) {
+    replyMap.value = { ...replyMap.value, [parentId]: { ...(replyMap.value[parentId] || {}), loading: false, error: '网络错误，无法回复。', expanded: true } }
   }
 }
 
 const deleteComment = async (commentId) => {
-  if (!commentId) return
-  if (!confirm('确定要删除该评论吗？')) return
+  try {
+    await ElMessageBox.confirm('确定删除这条评论吗？', '删除评论', { type: 'warning' })
+  } catch (error) {
+    return
+  }
   try {
     const res = await apiFetch(`/api/comments/${commentId}`, { method: 'DELETE' })
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
+    if (authGuard(res)) return
     const data = await res.json()
     if (!res.ok || data.code !== 0) {
       commentError.value = data.message || '删除失败。'
       return
     }
     await Promise.all([loadComments(commentPage.value || 1), loadStats()])
-  } catch (err) {
+  } catch (error) {
     commentError.value = '网络错误，无法删除评论。'
   }
 }
 
 const toggleLike = async () => {
-  actionError.value = ''
-  actionSuccess.value = ''
   const postId = Number(route.params.id)
+  actionError.value = ''
   try {
-    if (!liked.value) {
-      const res = await apiFetch('/api/likes', {
-        method: 'POST',
-        body: JSON.stringify({ targetType: 0, targetId: postId }),
-      })
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
-      const data = await res.json()
-      if (!res.ok || data.code !== 0) {
-        actionError.value = data.message || '点赞失败。'
-        return
-      }
-      liked.value = true
-    } else {
-      const res = await apiFetch(`/api/likes?targetType=0&targetId=${postId}`, {
-        method: 'DELETE',
-      })
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
-      const data = await res.json()
-      if (!res.ok || data.code !== 0) {
-        actionError.value = data.message || '取消点赞失败。'
-        return
-      }
-      liked.value = false
+    const res = !liked.value
+      ? await apiFetch('/api/likes', { method: 'POST', body: JSON.stringify({ targetType: 0, targetId: postId }) })
+      : await apiFetch(`/api/likes?targetType=0&targetId=${postId}`, { method: 'DELETE' })
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      actionError.value = data.message || '操作失败。'
+      return
     }
+    liked.value = !liked.value
     await loadStats()
-  } catch (err) {
+  } catch (error) {
     actionError.value = '网络错误，操作失败。'
   }
 }
 
 const toggleFavorite = async () => {
-  actionError.value = ''
-  actionSuccess.value = ''
   const postId = Number(route.params.id)
+  actionError.value = ''
   try {
-    if (!favorited.value) {
-      const res = await apiFetch('/api/favorites', {
-        method: 'POST',
-        body: JSON.stringify({ postId }),
-      })
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
-      const data = await res.json()
-      if (!res.ok || data.code !== 0) {
-        actionError.value = data.message || '收藏失败。'
-        return
-      }
-      favorited.value = true
-    } else {
-      const res = await apiFetch(`/api/favorites/${postId}`, { method: 'DELETE' })
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
-      const data = await res.json()
-      if (!res.ok || data.code !== 0) {
-        actionError.value = data.message || '取消收藏失败。'
-        return
-      }
-      favorited.value = false
+    const res = !favorited.value
+      ? await apiFetch('/api/favorites', { method: 'POST', body: JSON.stringify({ postId }) })
+      : await apiFetch(`/api/favorites/${postId}`, { method: 'DELETE' })
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      actionError.value = data.message || '操作失败。'
+      return
     }
+    favorited.value = !favorited.value
     await loadStats()
-  } catch (err) {
+  } catch (error) {
     actionError.value = '网络错误，操作失败。'
   }
 }
 
 const toggleFollow = async () => {
+  if (!detail.value?.userId) return
   actionError.value = ''
-  actionSuccess.value = ''
-  if (!detail.value) return
-  const followeeId = detail.value.userId
-  if (!followeeId) return
   try {
-    if (!following.value) {
-      const res = await apiFetch(`/api/follows/${followeeId}`, { method: 'POST' })
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
-      const data = await res.json()
-      if (!res.ok || data.code !== 0) {
-        actionError.value = data.message || '关注失败。'
-        return
-      }
-      following.value = true
-      actionSuccess.value = '已关注该用户。'
-    } else {
-      const res = await apiFetch(`/api/follows/${followeeId}`, { method: 'DELETE' })
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
-      const data = await res.json()
-      if (!res.ok || data.code !== 0) {
-        actionError.value = data.message || '取消关注失败。'
-        return
-      }
-      following.value = false
-      actionSuccess.value = '已取消关注。'
+    const res = !following.value
+      ? await apiFetch(`/api/follows/${detail.value.userId}`, { method: 'POST' })
+      : await apiFetch(`/api/follows/${detail.value.userId}`, { method: 'DELETE' })
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      actionError.value = data.message || '操作失败。'
+      return
     }
-  } catch (err) {
+    following.value = !following.value
+    actionSuccess.value = following.value ? '已关注该作者。' : '已取消关注。'
+  } catch (error) {
     actionError.value = '网络错误，操作失败。'
   }
 }
 
 const sharePost = async () => {
   actionError.value = ''
-  actionSuccess.value = ''
   try {
-    const res = await apiFetch('/api/shares', {
-      method: 'POST',
-      body: JSON.stringify({ postId: Number(route.params.id), channel: 'web' }),
-    })
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
+    const res = await apiFetch('/api/shares', { method: 'POST', body: JSON.stringify({ postId: Number(route.params.id), channel: 'web' }) })
+    if (authGuard(res)) return
     const data = await res.json()
     if (!res.ok || data.code !== 0) {
       actionError.value = data.message || '分享失败。'
       return
     }
-    actionSuccess.value = '已记录分享。'
-  } catch (err) {
+    actionSuccess.value = '分享记录已保存。'
+  } catch (error) {
     actionError.value = '网络错误，分享失败。'
   }
 }
 
 const toggleCommentLike = async (comment) => {
-  if (!comment?.id) return
   const current = !!commentLikeMap.value[comment.id]
   try {
-    if (!current) {
-      const res = await apiFetch('/api/likes', {
-        method: 'POST',
-        body: JSON.stringify({ targetType: 1, targetId: comment.id }),
-      })
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
-      const data = await res.json()
-      if (!res.ok || data.code !== 0) {
-        commentError.value = data.message || '点赞失败。'
-        return
-      }
-      comment.likeCount = (comment.likeCount || 0) + 1
-      commentLikeMap.value = { ...commentLikeMap.value, [comment.id]: true }
-    } else {
-      const res = await apiFetch(`/api/likes?targetType=1&targetId=${comment.id}`, {
-        method: 'DELETE',
-      })
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
-      const data = await res.json()
-      if (!res.ok || data.code !== 0) {
-        commentError.value = data.message || '取消点赞失败。'
-        return
-      }
-      comment.likeCount = Math.max((comment.likeCount || 0) - 1, 0)
-      commentLikeMap.value = { ...commentLikeMap.value, [comment.id]: false }
+    const res = !current
+      ? await apiFetch('/api/likes', { method: 'POST', body: JSON.stringify({ targetType: 1, targetId: comment.id }) })
+      : await apiFetch(`/api/likes?targetType=1&targetId=${comment.id}`, { method: 'DELETE' })
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      commentError.value = data.message || '操作失败。'
+      return
     }
-  } catch (err) {
+    comment.likeCount = current ? Math.max((comment.likeCount || 0) - 1, 0) : (comment.likeCount || 0) + 1
+    commentLikeMap.value = { ...commentLikeMap.value, [comment.id]: !current }
+  } catch (error) {
     commentError.value = '网络错误，操作失败。'
   }
 }
 
 const prepareReport = (targetType, targetId) => {
-  reportError.value = ''
-  reportSuccess.value = ''
+  reportTarget.value = { targetType, targetId }
   reportReason.value = ''
   reportDetail.value = ''
-  reportTarget.value = { targetType, targetId }
-  reportManual.value = false
+  reportError.value = ''
+  reportSuccess.value = ''
   showReportForm.value = true
-  if (reportSectionRef.value) {
-    reportSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
 }
 
 const submitReport = async () => {
-  reportError.value = ''
-  reportSuccess.value = ''
-  if (!reportTarget.value.targetId || reportTarget.value.targetType === null) {
-    reportError.value = '请选择举报对象。'
-    return
-  }
-  if (!reportReason.value.trim()) {
+  if (!reportTarget.value.targetId || !reportReason.value.trim()) {
     reportError.value = '请选择举报原因。'
     return
   }
   reportLoading.value = true
+  reportError.value = ''
   try {
     const res = await apiFetch('/api/reports', {
       method: 'POST',
@@ -598,17 +405,14 @@ const submitReport = async () => {
         detail: reportDetail.value.trim() || null,
       }),
     })
-    if (res.status === 401) {
-      router.push('/login')
-      return
-    }
+    if (authGuard(res)) return
     const data = await res.json()
     if (!res.ok || data.code !== 0) {
       reportError.value = data.message || '提交举报失败。'
       return
     }
     reportSuccess.value = '举报已提交，我们会尽快处理。'
-  } catch (err) {
+  } catch (error) {
     reportError.value = '网络错误，无法提交举报。'
   } finally {
     reportLoading.value = false
@@ -616,27 +420,15 @@ const submitReport = async () => {
 }
 
 watch(() => route.params.id, () => {
-  liked.value = false
-  favorited.value = false
-  following.value = false
-  replyMap.value = {}
-  replyDrafts.value = {}
-  commentLikeMap.value = {}
-  showReportForm.value = false
-  reportTarget.value = { targetType: 0, targetId: null }
-  reportReason.value = ''
-  reportDetail.value = ''
-  reportManual.value = false
+  resetState()
   loadDetail()
 })
 
 onMounted(() => {
   try {
     const savedUser = localStorage.getItem('auth_user')
-    if (savedUser) {
-      currentUser.value = JSON.parse(savedUser)
-    }
-  } catch (err) {
+    if (savedUser) currentUser.value = JSON.parse(savedUser)
+  } catch (error) {
     currentUser.value = null
   }
   loadDetail()
@@ -644,304 +436,254 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="post-page">
-    <header class="profile-hero">
+  <UserShell section="home">
+    <section class="campus-hero">
+      <el-page-header @back="router.push('/home')">
+        <template #content><span style="font-weight: 700">内容详情</span></template>
+        <template #extra>
+          <div class="campus-inline-actions">
+            <el-button plain @click="router.push('/profile')">我的空间</el-button>
+            <el-button v-if="isOwner" type="primary" plain @click="router.push(`/posts/${route.params.id}/edit`)">编辑内容</el-button>
+          </div>
+        </template>
+      </el-page-header>
+      <p class="campus-hero__subtitle">正文阅读、互动反馈和相关推荐分栏展示，浏览路径会更顺畅。</p>
+    </section>
+
+    <div class="campus-grid campus-grid--detail">
       <div>
-        <span class="hero-tag">内容详情</span>
-        <h1>{{ detail?.title || '未命名内容' }}</h1>
-        <p>发布于 {{ detail?.createdAt || '-' }}</p>
-      </div>
-      <div class="profile-actions">
-        <button class="ghost-btn" type="button" @click="router.push('/profile')">返回个人中心</button>
-        <button class="ghost-btn" type="button" @click="router.push(`/posts/${route.params.id}/edit`)">编辑</button>
-      </div>
-    </header>
-
-    <section class="profile-section">
-      <div v-if="loading" class="feed-empty">加载中...</div>
-      <div v-else-if="error" class="form-alert error">{{ error }}</div>
-      <div v-else-if="detail" class="post-detail">
-        <div class="interaction-bar">
-          <div class="interaction-stats">
-            <span>点赞 {{ stats?.likeCount ?? detail.likeCount ?? 0 }}</span>
-            <span>评论 {{ stats?.commentCount ?? detail.commentCount ?? 0 }}</span>
-            <span>收藏 {{ stats?.favoriteCount ?? detail.favoriteCount ?? 0 }}</span>
-            <span>浏览 {{ stats?.viewCount ?? detail.viewCount ?? 0 }}</span>
-          </div>
-          <div class="interaction-actions">
-            <button class="ghost-btn" type="button" @click="toggleLike">
-              {{ liked ? '已点赞' : '点赞' }}
-            </button>
-            <button class="ghost-btn" type="button" @click="toggleFavorite">
-              {{ favorited ? '已收藏' : '收藏' }}
-            </button>
-            <button class="ghost-btn" type="button" @click="sharePost">分享</button>
-            <button class="ghost-btn" type="button" @click="prepareReport(0, detail.id)">举报内容</button>
-            <button
-              v-if="!isOwner"
-              class="ghost-btn"
-              type="button"
-              @click="toggleFollow"
-            >
-              {{ following ? '取消关注' : '关注作者' }}
-            </button>
-            <button
-              v-if="!isOwner"
-              class="ghost-btn"
-              type="button"
-              @click="prepareReport(2, detail.userId)"
-            >
-              举报作者
-            </button>
-          </div>
-        </div>
-        <p v-if="actionError" class="form-alert error">{{ actionError }}</p>
-        <p v-if="actionSuccess" class="form-alert success">{{ actionSuccess }}</p>
-        <p v-if="statsError" class="form-alert error">{{ statsError }}</p>
-        <p class="post-content">{{ detail.content }}</p>
-        <div class="post-meta">
-          <span>可见范围：{{ detail.visibility === 0 ? '全校' : detail.visibility === 1 ? '关注' : '仅自己' }}</span>
-          <span>类型：{{ detail.postType ?? 0 }}</span>
-          <span class="status-pill" :class="detail.status === 0 ? 'pending' : detail.status === 1 ? 'approved' : detail.status === 2 ? 'rejected' : 'draft'">
-            {{ detail.status === 0 ? '待审' : detail.status === 1 ? '通过' : detail.status === 2 ? '驳回' : '草稿' }}
-          </span>
-          <span v-if="detail.location">位置：{{ detail.location }}</span>
-          <span v-if="detail.college">学院：{{ detail.college }}</span>
-        </div>
-
-        <div v-if="detail.media && detail.media.length" class="media-preview">
-          <div v-for="media in detail.media" :key="media.id" class="media-item">
-            <img v-if="media.mediaType === 0" :src="media.url" alt="media" />
-            <a v-else :href="media.url" target="_blank" rel="noreferrer">查看视频</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="profile-section">
-      <div class="profile-header">
-        <div>
-          <h2>评论区</h2>
-          <p>分享你的观点，参与讨论。</p>
-        </div>
-      </div>
-      <form class="comment-form" @submit.prevent="submitComment">
-        <label class="field">
-          <span>发表评论</span>
-          <textarea v-model="commentContent" rows="3" placeholder="写下你的评论..."></textarea>
-        </label>
-        <div class="emoji-toolbar">
-          <button class="ghost-btn" type="button" @click="toggleEmojiPicker('comment')">
-            {{ activeEmojiTarget === 'comment' ? '收起表情' : '选择表情' }}
-          </button>
-        </div>
-        <div v-if="activeEmojiTarget === 'comment'" class="emoji-picker">
-          <button
-            v-for="emoji in emojiList"
-            :key="`comment-${emoji}`"
-            class="emoji-btn"
-            type="button"
-            @click="insertEmoji(emoji, 'comment')"
-          >
-            {{ emoji }}
-          </button>
-        </div>
-        <div class="profile-actions">
-          <button class="primary-btn" type="submit" :disabled="commentLoading">
-            {{ commentLoading ? '发布中...' : '发布评论' }}
-          </button>
-        </div>
-        <p v-if="commentError" class="form-alert error">{{ commentError }}</p>
-      </form>
-
-      <div v-if="commentLoading" class="feed-empty">评论加载中...</div>
-      <div v-else-if="comments.length === 0" class="feed-empty">暂无评论，快来第一条吧。</div>
-      <div v-else class="comment-list">
-        <div v-for="item in comments" :key="item.id" class="comment-item">
-          <div class="comment-body">
-            <div class="comment-meta">
-              <span>用户 {{ item.userId }}</span>
-              <span>{{ item.createdAt }}</span>
+        <el-card v-if="loading" class="campus-panel" shadow="never"><el-skeleton animated :rows="10" /></el-card>
+        <el-alert v-else-if="error" :title="error" type="error" show-icon />
+        <template v-else-if="detail">
+          <el-card class="campus-panel" shadow="never">
+            <div class="campus-meta-row">
+              <el-tag round>{{ getPostTypeLabel(detail.postType) }}</el-tag>
+              <el-tag round :type="statusMeta.type">{{ statusMeta.label }}</el-tag>
+              <el-tag round type="info">{{ getVisibilityLabel(detail.visibility) }}</el-tag>
+              <el-tag v-if="detail.college" round type="success">{{ detail.college }}</el-tag>
+              <el-tag v-if="detail.location" round type="warning">{{ detail.location }}</el-tag>
             </div>
-            <p>{{ item.content }}</p>
-            <div class="comment-actions">
-              <button class="ghost-btn" type="button" @click="toggleCommentLike(item)">
-                赞 {{ item.likeCount ?? 0 }}
-              </button>
-              <button class="ghost-btn" type="button" @click="toggleReplies(item.id)">
-                {{ replyMap[item.id]?.expanded ? '收起回复' : '查看回复' }}
-              </button>
-              <button class="ghost-btn" type="button" @click="prepareReport(1, item.id)">举报</button>
+            <h1 class="campus-detail-article__title">{{ detail.title || '未命名内容' }}</h1>
+            <div class="campus-author">
+              <div class="campus-author__meta">
+                <el-avatar :size="52">{{ authorInitial }}</el-avatar>
+                <div>
+                  <p class="campus-author__name">{{ authorName }}</p>
+                  <p class="campus-muted">发布于 {{ detail.createdAt || '-' }}</p>
+                </div>
+              </div>
+              <div class="campus-inline-actions">
+                <el-button :type="liked ? 'primary' : 'default'" plain @click="toggleLike"><el-icon><Position /></el-icon>{{ liked ? '已点赞' : '点赞' }}</el-button>
+                <el-button :type="favorited ? 'warning' : 'default'" plain @click="toggleFavorite"><el-icon><Star /></el-icon>{{ favorited ? '已收藏' : '收藏' }}</el-button>
+                <el-button plain @click="sharePost"><el-icon><Promotion /></el-icon>分享</el-button>
+                <el-button plain @click="prepareReport(0, detail.id)"><el-icon><Flag /></el-icon>举报</el-button>
+                <el-button v-if="!isOwner" plain @click="toggleFollow">{{ following ? '取消关注' : '关注作者' }}</el-button>
+              </div>
+            </div>
+            <div class="campus-article-body">{{ detail.content }}</div>
+            <div v-if="detail.media?.length" class="campus-media-grid">
+              <div v-for="item in detail.media" :key="item.id || item.url" class="campus-media-card">
+                <el-image
+                  v-if="item.mediaType === 0"
+                  :src="item.url"
+                  :preview-src-list="mediaPreviewUrls"
+                  fit="cover"
+                  style="width: 100%; height: 260px"
+                />
+                <div v-else style="padding: 18px">
+                  <p class="campus-side-item__title">视频内容</p>
+                  <p class="campus-side-item__desc">{{ item.url }}</p>
+                  <el-button type="primary" plain style="margin-top: 12px">
+                    <a :href="item.url" target="_blank" rel="noreferrer">打开视频</a>
+                  </el-button>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 20px">
+              <el-alert v-if="actionError" :title="actionError" type="error" show-icon />
+              <el-alert v-if="actionSuccess" :title="actionSuccess" type="success" show-icon />
+            </div>
+          </el-card>
+
+          <el-card class="campus-panel" shadow="never">
+            <div class="campus-panel__header">
+              <div>
+                <h2 class="campus-panel__title">评论讨论</h2>
+                <p class="campus-panel__desc">评论和回复统一放在阅读区下方，方便继续追踪讨论。</p>
+              </div>
+              <el-tag round effect="dark">共 {{ commentTotal }} 条</el-tag>
+            </div>
+            <el-input v-model="commentContent" type="textarea" :rows="4" resize="none" placeholder="写下你的看法..." />
+            <div class="emoji-toolbar" style="margin-top: 14px">
+              <el-button plain @click="toggleEmojiPicker('comment')">
+                {{ activeEmojiTarget === 'comment' ? '收起表情' : '选择表情' }}
+              </el-button>
+            </div>
+            <div v-if="activeEmojiTarget === 'comment'" class="emoji-picker" style="margin-top: 10px">
               <button
-                v-if="currentUser?.id === item.userId"
-                class="ghost-btn danger"
+                v-for="emoji in emojiList"
+                :key="`comment-${emoji}`"
+                class="emoji-btn"
                 type="button"
-                @click="deleteComment(item.id)"
+                @click="insertEmoji(emoji, 'comment')"
               >
-                删除
+                {{ emoji }}
               </button>
             </div>
-          </div>
-
-          <div v-if="replyMap[item.id]?.expanded" class="reply-section">
-            <div v-if="replyMap[item.id]?.loading" class="feed-empty">回复加载中...</div>
-            <div v-else-if="replyMap[item.id]?.error" class="form-alert error">{{ replyMap[item.id].error }}</div>
-            <div v-else-if="replyMap[item.id]?.list?.length" class="reply-list">
-              <div v-for="reply in replyMap[item.id].list" :key="reply.id" class="reply-item">
-                <div class="comment-meta">
-                  <span>用户 {{ reply.userId }}</span>
-                  <span>{{ reply.createdAt }}</span>
-                </div>
-                <p>{{ reply.content }}</p>
-                <div class="comment-actions">
-                  <button class="ghost-btn" type="button" @click="toggleCommentLike(reply)">
-                    赞 {{ reply.likeCount ?? 0 }}
-                  </button>
-                  <button class="ghost-btn" type="button" @click="prepareReport(1, reply.id)">举报</button>
-                  <button
-                    v-if="currentUser?.id === reply.userId"
-                    class="ghost-btn danger"
-                    type="button"
-                    @click="deleteComment(reply.id)"
-                  >
-                    删除
-                  </button>
-                </div>
-              </div>
+            <div class="campus-inline-actions" style="margin-top: 14px">
+              <el-button type="primary" :loading="commentSubmitting" @click="submitComment">发布评论</el-button>
             </div>
-            <div v-else class="feed-empty">暂无回复。</div>
+            <el-alert v-if="commentError" :title="commentError" type="error" show-icon style="margin-top: 14px" />
+            <div style="margin-top: 22px">
+              <div v-if="commentsLoading" class="campus-comment-list"><el-skeleton v-for="index in 3" :key="index" animated :rows="4" /></div>
+              <div v-else-if="comments.length" class="campus-comment-list">
+                <div v-for="item in comments" :key="item.id" class="campus-comment">
+                  <div class="campus-comment__top">
+                    <div>
+                      <strong>用户 {{ item.userId }}</strong>
+                      <p class="campus-muted" style="margin-top: 4px">{{ item.createdAt }}</p>
+                    </div>
+                    <el-tag round effect="plain">主评论</el-tag>
+                  </div>
+                  <p class="campus-comment__content">{{ item.content }}</p>
+                  <div class="campus-comment__actions">
+                    <div class="campus-inline-actions">
+                      <el-button plain @click="toggleCommentLike(item)">赞 {{ item.likeCount ?? 0 }}</el-button>
+                      <el-button plain @click="toggleReplies(item.id)">{{ replyMap[item.id]?.expanded ? '收起回复' : '查看回复' }}</el-button>
+                      <el-button plain @click="prepareReport(1, item.id)">举报</el-button>
+                    </div>
+                    <el-button v-if="currentUser?.id === item.userId" type="danger" plain @click="deleteComment(item.id)">删除</el-button>
+                  </div>
+                  <div v-if="replyMap[item.id]?.expanded" class="campus-reply-list">
+                    <el-alert v-if="replyMap[item.id]?.error" :title="replyMap[item.id].error" type="error" show-icon />
+                    <el-skeleton v-if="replyMap[item.id]?.loading" animated :rows="2" />
+                    <template v-else-if="replyMap[item.id]?.list?.length">
+                      <div v-for="reply in replyMap[item.id].list" :key="reply.id" class="campus-reply-item">
+                        <strong>用户 {{ reply.userId }}</strong>
+                        <p class="campus-muted" style="margin-top: 4px">{{ reply.createdAt }}</p>
+                        <p class="campus-comment__content" style="margin-bottom: 0">{{ reply.content }}</p>
+                        <div class="campus-inline-actions" style="margin-top: 12px">
+                          <el-button plain @click="toggleCommentLike(reply)">赞 {{ reply.likeCount ?? 0 }}</el-button>
+                          <el-button plain @click="prepareReport(1, reply.id)">举报</el-button>
+                          <el-button v-if="currentUser?.id === reply.userId" type="danger" plain @click="deleteComment(reply.id)">删除</el-button>
+                        </div>
+                      </div>
+                    </template>
+                    <el-empty v-else description="暂无回复" :image-size="56" />
+                    <div class="campus-comment__reply-form">
+                      <el-input v-model="replyDrafts[item.id]" placeholder="回复这条评论..." style="flex: 1" />
+                      <el-button plain @click="toggleEmojiPicker(getReplyEmojiTarget(item.id))">
+                        {{ activeEmojiTarget === getReplyEmojiTarget(item.id) ? '收起表情' : '表情' }}
+                      </el-button>
+                      <el-button type="primary" plain @click="submitReply(item.id)">回复</el-button>
+                    </div>
+                    <div
+                      v-if="activeEmojiTarget === getReplyEmojiTarget(item.id)"
+                      class="emoji-picker reply-emoji-picker"
+                      style="margin-top: 10px"
+                    >
+                      <button
+                        v-for="emoji in emojiList"
+                        :key="`reply-${item.id}-${emoji}`"
+                        class="emoji-btn"
+                        type="button"
+                        @click="insertEmoji(emoji, getReplyEmojiTarget(item.id))"
+                      >
+                        {{ emoji }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <el-empty v-else description="还没有评论，成为第一个参与讨论的人。" />
+            </div>
+            <div v-if="commentTotal > commentSize" style="margin-top: 20px">
+              <el-pagination
+                background
+                layout="prev, pager, next, ->, total"
+                :current-page="commentPage"
+                :page-size="commentSize"
+                :total="commentTotal"
+                @current-change="loadComments"
+              />
+            </div>
+          </el-card>
+        </template>
+      </div>
 
-            <div class="reply-form">
-              <label class="field">
-                <span>回复评论</span>
-                <input v-model="replyDrafts[item.id]" type="text" placeholder="回复这条评论..." />
-              </label>
-              <div class="reply-form-actions">
-                <button class="ghost-btn" type="button" @click="toggleEmojiPicker(getReplyEmojiTarget(item.id))">
-                  {{ activeEmojiTarget === getReplyEmojiTarget(item.id) ? '收起表情' : '表情' }}
-                </button>
-                <button class="ghost-btn" type="button" @click="submitReply(item.id)">回复</button>
-              </div>
-              <div v-if="activeEmojiTarget === getReplyEmojiTarget(item.id)" class="emoji-picker reply-emoji-picker">
-                <button
-                  v-for="emoji in emojiList"
-                  :key="`reply-${item.id}-${emoji}`"
-                  class="emoji-btn"
-                  type="button"
-                  @click="insertEmoji(emoji, getReplyEmojiTarget(item.id))"
-                >
-                  {{ emoji }}
-                </button>
-              </div>
+      <aside>
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">互动数据</h2>
+              <p class="campus-panel__desc">阅读时同步看到反馈热度。</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div class="pager" v-if="commentTotal > commentSize">
-        <button class="ghost-btn" type="button" :disabled="commentPage <= 1" @click="loadComments(commentPage - 1)">
-          上一页
-        </button>
-        <span>{{ commentPage }} / {{ Math.ceil(commentTotal / commentSize) }}</span>
-        <button
-          class="ghost-btn"
-          type="button"
-          :disabled="commentPage >= Math.ceil(commentTotal / commentSize)"
-          @click="loadComments(commentPage + 1)"
-        >
-          下一页
-        </button>
-      </div>
-    </section>
-
-    <section ref="reportSectionRef" class="profile-section">
-      <div class="profile-header">
-        <div>
-          <h2>举报反馈</h2>
-          <p>如果内容或用户违规，请提交举报说明。</p>
-        </div>
-        <button class="ghost-btn" type="button" @click="showReportForm = !showReportForm">
-          {{ showReportForm ? '收起' : '展开' }}
-        </button>
-      </div>
-      <div v-if="showReportForm" class="report-form">
-        <div v-if="reportTarget.targetId && !reportManual" class="report-hint">
-          已自动填入举报对象：{{ reportTarget.targetType === 0 ? '内容' : reportTarget.targetType === 1 ? '评论' : '用户' }} #{{ reportTarget.targetId }}
-        </div>
-        <div class="grid-2">
-          <label class="field">
-            <span>举报对象类型</span>
-            <select v-model.number="reportTarget.targetType" :disabled="reportTarget.targetId && !reportManual">
-              <option :value="0">内容</option>
-              <option :value="1">评论</option>
-              <option :value="2">用户</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>对象 ID</span>
-            <input
-              v-model="reportTarget.targetId"
-              type="number"
-              placeholder="输入对象 ID"
-              :readonly="reportTarget.targetId && !reportManual"
-            />
-          </label>
-        </div>
-        <div class="report-toggle">
-          <button
-            class="ghost-btn"
-            type="button"
-            @click="reportManual = !reportManual"
-          >
-            {{ reportManual ? '使用自动对象' : '手动填写' }}
-          </button>
-        </div>
-        <label class="field">
-          <span>举报原因</span>
-          <select v-model="reportReason">
-            <option value="">请选择原因</option>
-            <option v-for="item in reportReasons" :key="item" :value="item">{{ item }}</option>
-          </select>
-        </label>
-        <label class="field">
-          <span>补充说明（可选）</span>
-          <textarea v-model="reportDetail" rows="3" placeholder="可填写更多描述"></textarea>
-        </label>
-        <div class="profile-actions">
-          <button class="primary-btn" type="button" :disabled="reportLoading" @click="submitReport">
-            {{ reportLoading ? '提交中...' : '提交举报' }}
-          </button>
-        </div>
-        <p v-if="reportError" class="form-alert error">{{ reportError }}</p>
-        <p v-if="reportSuccess" class="form-alert success">{{ reportSuccess }}</p>
-      </div>
-    </section>
-
-    <section class="profile-section">
-      <div class="profile-header">
-        <div>
-          <h2>相关推荐</h2>
-          <p>基于话题标签推荐的相似内容。</p>
-        </div>
-        <button class="ghost-btn" type="button" @click="loadRelated">刷新</button>
-      </div>
-      <div v-if="relatedLoading" class="feed-empty">加载中...</div>
-      <div v-else-if="relatedError" class="form-alert error">{{ relatedError }}</div>
-      <div v-else-if="related.length" class="feed-grid">
-        <article v-for="item in related" :key="item.id" class="feed-item">
-          <h4>{{ item.title || '未命名内容' }}</h4>
-          <p>{{ item.content || '暂无内容' }}</p>
-          <div class="feed-meta">
-            <span>点赞 {{ item.likeCount ?? 0 }}</span>
-            <span>评论 {{ item.commentCount ?? 0 }}</span>
-            <span>收藏 {{ item.favoriteCount ?? 0 }}</span>
+          <el-alert v-if="statsError" :title="statsError" type="error" show-icon style="margin-bottom: 14px" />
+          <div class="campus-stat-grid">
+            <div class="campus-stat-box"><p class="campus-stat-box__label">点赞</p><p class="campus-stat-box__value">{{ statsLoading ? '...' : stats?.likeCount ?? detail?.likeCount ?? 0 }}</p></div>
+            <div class="campus-stat-box"><p class="campus-stat-box__label">评论</p><p class="campus-stat-box__value">{{ statsLoading ? '...' : stats?.commentCount ?? detail?.commentCount ?? 0 }}</p></div>
+            <div class="campus-stat-box"><p class="campus-stat-box__label">收藏</p><p class="campus-stat-box__value">{{ statsLoading ? '...' : stats?.favoriteCount ?? detail?.favoriteCount ?? 0 }}</p></div>
+            <div class="campus-stat-box"><p class="campus-stat-box__label">浏览</p><p class="campus-stat-box__value">{{ statsLoading ? '...' : stats?.viewCount ?? detail?.viewCount ?? 0 }}</p></div>
           </div>
-          <div class="feed-actions">
-            <RouterLink class="ghost-btn" :to="`/posts/${item.id}`">查看详情</RouterLink>
+          <div class="campus-side-list" style="margin-top: 18px">
+            <div class="campus-side-item">
+              <p class="campus-side-item__title">内容摘要</p>
+              <p class="campus-side-item__desc">{{ formatSnippet(detail?.content, 96) }}</p>
+            </div>
           </div>
-        </article>
+        </el-card>
+
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">相关推荐</h2>
+              <p class="campus-panel__desc">沿着同一兴趣继续浏览。</p>
+            </div>
+            <el-button plain @click="loadRelated">刷新</el-button>
+          </div>
+          <el-alert v-if="relatedError" :title="relatedError" type="error" show-icon style="margin-bottom: 14px" />
+          <div v-if="relatedLoading" class="campus-side-list"><el-skeleton v-for="index in 2" :key="index" animated :rows="3" /></div>
+          <div v-else-if="related.length" class="campus-side-list">
+            <PostCard v-for="item in related" :key="item.id" :post="item" badge="相关推荐" compact :show-status="false" />
+          </div>
+          <el-empty v-else description="暂无相关推荐" />
+        </el-card>
+
+        <el-card class="campus-panel" shadow="never">
+          <div class="campus-panel__header">
+            <div>
+              <h2 class="campus-panel__title">内容反馈</h2>
+              <p class="campus-panel__desc">对违规内容或用户快速提交处理。</p>
+            </div>
+          </div>
+          <div class="campus-side-list">
+            <div class="campus-side-item">
+              <p class="campus-side-item__title">举报当前内容</p>
+              <p class="campus-side-item__desc">支持不实信息、广告、辱骂等反馈。</p>
+              <el-button type="danger" plain @click="prepareReport(0, detail?.id)">提交举报</el-button>
+            </div>
+            <div v-if="!isOwner" class="campus-side-item">
+              <p class="campus-side-item__title">举报作者</p>
+              <p class="campus-side-item__desc">遇到恶意骚扰或违规行为时使用。</p>
+              <el-button plain @click="prepareReport(2, detail?.userId)">举报作者</el-button>
+            </div>
+          </div>
+        </el-card>
+      </aside>
+    </div>
+
+    <el-drawer v-model="showReportForm" title="举报反馈" size="420px">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <el-alert v-if="reportTarget.targetId" :title="`举报对象 ID：${reportTarget.targetId}`" type="warning" show-icon />
+        <el-select v-model="reportReason" placeholder="请选择举报原因">
+          <el-option v-for="item in reportReasons" :key="item" :label="item" :value="item" />
+        </el-select>
+        <el-input v-model="reportDetail" type="textarea" :rows="5" resize="none" placeholder="补充说明举报细节，可选" />
+        <el-button type="danger" :loading="reportLoading" @click="submitReport">提交举报</el-button>
+        <el-alert v-if="reportError" :title="reportError" type="error" show-icon />
+        <el-alert v-if="reportSuccess" :title="reportSuccess" type="success" show-icon />
       </div>
-      <div v-else class="feed-empty">暂无相关推荐。</div>
-    </section>
-  </div>
+    </el-drawer>
+  </UserShell>
 </template>

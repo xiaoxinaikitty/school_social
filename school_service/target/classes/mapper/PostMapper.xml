@@ -113,6 +113,14 @@
             </if>
         </where>
     </select>
+    <select id="selectApprovedAll" resultType="com.school.social.entity.Post">
+        SELECT id, user_id, title, content, post_type, status, visibility, location, college,
+               like_count, comment_count, favorite_count, view_count, quality_score,
+               is_pinned, is_featured, created_at, updated_at, published_at
+        FROM posts
+        WHERE status = 1
+        ORDER BY created_at DESC
+    </select>
 
     <select id="selectRecommendPaged" resultType="com.school.social.entity.Post">
         SELECT id, user_id, title, content, post_type, status, visibility, location, college,
@@ -289,6 +297,11 @@
     <update id="decreaseCommentCountBy">
         UPDATE posts
         SET comment_count = GREATEST(IFNULL(comment_count, 0) - #{amount}, 0)
+        WHERE id = #{postId}
+    </update>
+    <update id="increaseViewCount">
+        UPDATE posts
+        SET view_count = IFNULL(view_count, 0) + 1
         WHERE id = #{postId}
     </update>
 

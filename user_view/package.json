@@ -12,6 +12,8 @@
     "lint:eslint": "eslint . --fix --cache"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "element-plus": "^2.13.6",
     "pinia": "^3.0.4",
     "vue": "^3.5.28",
     "vue-router": "^5.0.2"

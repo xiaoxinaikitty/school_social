@@ -18,6 +18,7 @@ import com.school.social.mapper.PostTagMapper;
 import com.school.social.mapper.RoleMapper;
 import com.school.social.mapper.TagMapper;
 import com.school.social.mapper.UserRoleMapper;
+import com.school.social.service.RecommendationService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,6 +59,9 @@ public class PostController {
 
     @Resource
     private UserRoleMapper userRoleMapper;
+
+    @Resource
+    private RecommendationService recommendationService;
 
     @PostMapping
     public ApiResponse<PostDetailResponse> create(@Validated @RequestBody PostCreateRequest request,
@@ -158,12 +162,13 @@ public class PostController {
         if (existing == null) {
             return ApiResponse.fail("内容不存在");
         }
+        Long userId = (Long) httpRequest.getAttribute("userId");
         if (existing.getStatus() == null || existing.getStatus() != 1) {
-            Long userId = (Long) httpRequest.getAttribute("userId");
             if (userId == null || (!userId.equals(existing.getUserId()) && !isAdmin(userId))) {
                 return ApiResponse.fail("内容未审核通过");
             }
         }
+        recommendationService.recordDetailView(userId, id);
         return ApiResponse.success(buildDetail(id));
     }
 
@@ -185,13 +190,12 @@ public class PostController {
 
     @GetMapping("/recommend")
     public ApiResponse<PageResponse<Post>> recommend(@RequestParam(defaultValue = "1") int page,
-                                                     @RequestParam(defaultValue = "10") int size) {
+                                                     @RequestParam(defaultValue = "10") int size,
+                                                     HttpServletRequest httpRequest) {
         int safePage = clampPage(page);
         int safeSize = clampSize(size);
-        int offset = (safePage - 1) * safeSize;
-        List<Post> list = postMapper.selectRecommendPaged(offset, safeSize);
-        long total = postMapper.countRecommend();
-        return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        return ApiResponse.success(recommendationService.recommend(userId, safePage, safeSize));
     }
 
     @GetMapping("/latest")

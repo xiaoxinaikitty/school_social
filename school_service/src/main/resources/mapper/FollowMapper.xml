@@ -66,5 +66,10 @@
         ORDER BY f.created_at DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
+    <select id="selectFolloweeIds" resultType="long">
+        SELECT followee_id
+        FROM follows
+        WHERE follower_id = #{userId}
+    </select>
 
 </mapper>

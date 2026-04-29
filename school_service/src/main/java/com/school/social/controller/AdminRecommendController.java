@@ -3,14 +3,17 @@ package com.school.social.controller;
 import com.school.social.common.ApiResponse;
 import com.school.social.config.RecommendConfigStore;
 import com.school.social.dto.admin.RecommendConfig;
+import com.school.social.dto.admin.RecommendOverview;
 import com.school.social.entity.Role;
 import com.school.social.entity.UserRole;
 import com.school.social.mapper.RoleMapper;
 import com.school.social.mapper.UserRoleMapper;
+import com.school.social.service.RecommendationService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -28,6 +31,9 @@ public class AdminRecommendController {
     @Resource
     private UserRoleMapper userRoleMapper;
 
+    @Resource
+    private RecommendationService recommendationService;
+
     @GetMapping("/config")
     public ApiResponse<RecommendConfig> getConfig(HttpServletRequest httpRequest) {
         if (!isAdmin(httpRequest)) {
@@ -44,6 +50,15 @@ public class AdminRecommendController {
         }
         RecommendConfig updated = recommendConfigStore.update(request);
         return ApiResponse.success(updated);
+    }
+
+    @GetMapping("/overview")
+    public ApiResponse<RecommendOverview> overview(@RequestParam(defaultValue = "7") int days,
+                                                   HttpServletRequest httpRequest) {
+        if (!isAdmin(httpRequest)) {
+            return ApiResponse.fail("无权限访问");
+        }
+        return ApiResponse.success(recommendationService.getOverview(days));
     }
 
     private boolean isAdmin(HttpServletRequest request) {

@@ -31,4 +31,6 @@ public interface FollowMapper {
     List<UserView> selectFollowingPaged(@Param("userId") Long userId,
                                         @Param("offset") int offset,
                                         @Param("size") int size);
+
+    List<Long> selectFolloweeIds(@Param("userId") Long userId);
 }
