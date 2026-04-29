@@ -34,6 +34,7 @@ com\school\social\dto\chat\ChatSocketMessageRequest.class
 com\school\social\service\impl\UserServiceImpl.class
 com\school\social\dto\friend\FriendCandidateView.class
 com\school\social\service\impl\FriendServiceImpl.class
+com\school\social\dto\auth\ForgotPasswordVerifyCodeRequest.class
 com\school\social\dto\admin\RecommendOverview.class
 com\school\social\controller\PostMediaController.class
 com\school\social\entity\Comment.class
@@ -42,10 +43,14 @@ com\school\social\config\WebSocketConfig.class
 com\school\social\controller\AuditLogController.class
 com\school\social\entity\Announcement.class
 com\school\social\mapper\RecommendationLogMapper.class
+com\school\social\service\EmailService.class
 com\school\social\service\FavoriteService.class
 com\school\social\entity\Notification.class
+com\school\social\service\impl\EmailServiceImpl.class
 com\school\social\entity\FriendRequest.class
+com\school\social\entity\PasswordResetCode.class
 com\school\social\controller\ReportController.class
+com\school\social\dto\auth\ResetPasswordRequest.class
 com\school\social\entity\ChatRoom.class
 com\school\social\controller\BehaviorLogController.class
 com\school\social\service\impl\ChatServiceImpl.class
@@ -83,6 +88,7 @@ com\school\social\controller\CommentController.class
 com\school\social\entity\RecommendationLog.class
 com\school\social\controller\ChatController.class
 com\school\social\service\impl\ReportServiceImpl.class
+com\school\social\config\AuthSchemaInitializer.class
 com\school\social\mapper\BehaviorLogMapper.class
 com\school\social\entity\User.class
 com\school\social\service\impl\AuthServiceImpl.class
@@ -98,6 +104,7 @@ com\school\social\controller\LikeController.class
 com\school\social\mapper\TagMapper.class
 com\school\social\SchoolServiceApplication.class
 com\school\social\dto\auth\UserView.class
+com\school\social\mapper\PasswordResetCodeMapper.class
 com\school\social\service\PostTagService.class
 com\school\social\entity\ChatMessage.class
 com\school\social\dto\admin\RecommendPostStat.class
@@ -130,4 +137,5 @@ com\school\social\dto\friend\FriendRequestRespondRequest.class
 com\school\social\dto\admin\RecommendSceneStat.class
 com\school\social\service\impl\FollowServiceImpl.class
 com\school\social\service\TagService.class
+com\school\social\dto\auth\ForgotPasswordSendCodeRequest.class
 com\school\social\config\ChatSchemaInitializer.class

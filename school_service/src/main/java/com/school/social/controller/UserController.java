@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.List;
 import java.util.Set;
 
@@ -76,14 +77,14 @@ public class UserController {
         if (user == null) {
             return ApiResponse.fail("用户不存在");
         }
-        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
-            User exists = userMapper.selectByEmail(request.getEmail());
-            if (exists != null && !exists.getId().equals(id)) {
-                return ApiResponse.fail("邮箱已被使用");
-            }
+        String email = normalizeRequiredEmail(request.getEmail());
+        String phone = normalizeOptionalText(request.getPhone());
+        User existsByEmail = userMapper.selectByEmail(email);
+        if (existsByEmail != null && !existsByEmail.getId().equals(id)) {
+            return ApiResponse.fail("邮箱已被使用");
         }
-        if (request.getPhone() != null && !request.getPhone().isEmpty()) {
-            User exists = userMapper.selectByPhone(request.getPhone());
+        if (phone != null) {
+            User exists = userMapper.selectByPhone(phone);
             if (exists != null && !exists.getId().equals(id)) {
                 return ApiResponse.fail("手机号已被使用");
             }
@@ -91,15 +92,15 @@ public class UserController {
 
         User update = new User();
         update.setId(id);
-        update.setEmail(request.getEmail());
-        update.setPhone(request.getPhone());
-        update.setAvatarUrl(request.getAvatarUrl());
+        update.setEmail(email);
+        update.setPhone(phone);
+        update.setAvatarUrl(normalizeOptionalText(request.getAvatarUrl()));
         update.setGender(request.getGender());
         update.setBirthday(request.getBirthday());
-        update.setSchool(request.getSchool());
-        update.setCollege(request.getCollege());
-        update.setGrade(request.getGrade());
-        update.setBio(request.getBio());
+        update.setSchool(normalizeOptionalText(request.getSchool()));
+        update.setCollege(normalizeOptionalText(request.getCollege()));
+        update.setGrade(normalizeOptionalText(request.getGrade()));
+        update.setBio(normalizeOptionalText(request.getBio()));
         update.setUpdatedAt(LocalDateTime.now());
         userService.updateById(update);
 
@@ -214,5 +215,21 @@ public class UserController {
     private boolean checkSelf(HttpServletRequest request, Long id) {
         Long tokenUserId = (Long) request.getAttribute("userId");
         return tokenUserId != null && tokenUserId.equals(id);
+    }
+
+    private String normalizeRequiredEmail(String email) {
+        String value = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+        if (value.isEmpty()) {
+            throw new IllegalArgumentException("邮箱不能为空");
+        }
+        return value;
+    }
+
+    private String normalizeOptionalText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

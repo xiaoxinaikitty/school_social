@@ -35,7 +35,11 @@ const submit = async () => {
     error.value = '密码长度需为 6-32 位。'
     return
   }
-  if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+  if (!emailVal) {
+    error.value = '请输入邮箱。'
+    return
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
     error.value = '邮箱格式不正确。'
     return
   }
@@ -48,14 +52,12 @@ const submit = async () => {
     const payload = {
       username: name,
       password: pass,
+      email: emailVal,
       school: school.value.trim() || undefined,
       college: college.value.trim() || undefined,
       grade: grade.value.trim() || undefined,
       bio: bio.value.trim() || undefined,
       gender: gender.value ? Number(gender.value) : undefined,
-    }
-    if (emailVal) {
-      payload.email = emailVal
     }
     if (phoneVal) {
       payload.phone = phoneVal
@@ -111,7 +113,7 @@ const submit = async () => {
       <main class="auth-panel">
         <div class="panel-head">
           <h2>创建账号</h2>
-          <p>填写基本信息，邮箱或手机号可选。</p>
+          <p>填写基本信息，邮箱为必填项，用于登录找回密码。</p>
         </div>
 
         <form class="auth-form" @submit.prevent="submit">
@@ -127,8 +129,8 @@ const submit = async () => {
           </div>
           <div class="grid-2">
             <label class="field">
-              <span>邮箱（可选）</span>
-              <input v-model="email" type="email" placeholder="name@school.edu" />
+              <span>邮箱</span>
+              <input v-model="email" type="email" placeholder="name@school.edu" required />
             </label>
             <label class="field">
               <span>手机号（可选）</span>

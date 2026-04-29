@@ -26,6 +26,7 @@ public class User {
     private Integer status;
     private String registerIp;
     private LocalDateTime lastLoginAt;
+    private LocalDateTime passwordChangedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

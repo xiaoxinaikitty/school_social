@@ -11,6 +11,7 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\PostReviewRequest.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\friend\FriendRequestCreateRequest.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\UserTagService.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\auth\ForgotPasswordSendCodeRequest.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\CommentController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\user\UserTagView.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\NotificationController.java
@@ -86,6 +87,7 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\CommentService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\LikeServiceImpl.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\entity\PostMedia.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\EmailServiceImpl.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\entity\Announcement.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\interaction\FollowStatsResponse.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\entity\User.java
@@ -95,16 +97,19 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\AdminContentStat.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\AdminRecommendController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\RecommendationLogController.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\config\AuthSchemaInitializer.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\user\UserTagUpdateRequest.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\LikeService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\UploadController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\FavoriteController.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\mapper\PasswordResetCodeMapper.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\mapper\FollowMapper.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\UserService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\TagRequest.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\RecommendationService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\RecommendationLogServiceImpl.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\RetentionCount.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\EmailService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\RecommendPostStat.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\RecommendSceneStat.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\PostTagServiceImpl.java
@@ -116,6 +121,7 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\ChatController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\FollowController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\TagServiceImpl.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\entity\PasswordResetCode.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\PostFlagRequest.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\mapper\PostMapper.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\PostMediaController.java
@@ -144,6 +150,7 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\NotificationServiceImpl.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\PostTagController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\entity\AuditLog.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\auth\ForgotPasswordVerifyCodeRequest.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\AnnouncementController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\entity\UserRole.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\LikeController.java
@@ -151,6 +158,7 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\mapper\StatsMapper.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\PostTagService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\common\JwtUtil.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\auth\ResetPasswordRequest.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\TagService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\RecommendationServiceImpl.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\SchoolServiceApplication.java

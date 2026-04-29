@@ -125,6 +125,11 @@ const loadProfile = async () => {
 
 const saveProfile = async () => {
   if (!profile.value.id) return
+  if (!profile.value.email?.trim()) {
+    profileError.value = '邮箱不能为空，找回密码依赖该邮箱。'
+    profileSuccess.value = ''
+    return
+  }
   savingProfile.value = true
   profileError.value = ''
   profileSuccess.value = ''

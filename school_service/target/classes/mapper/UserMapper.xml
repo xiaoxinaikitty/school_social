@@ -18,6 +18,7 @@
         <if test="status != null">status,</if>
         <if test="registerIp != null">register_ip,</if>
         <if test="lastLoginAt != null">last_login_at,</if>
+        <if test="passwordChangedAt != null">password_changed_at,</if>
         <if test="createdAt != null">created_at,</if>
         <if test="updatedAt != null">updated_at,</if>
         </trim>
@@ -36,6 +37,7 @@
         <if test="status != null">#{status},</if>
         <if test="registerIp != null">#{registerIp},</if>
         <if test="lastLoginAt != null">#{lastLoginAt},</if>
+        <if test="passwordChangedAt != null">#{passwordChangedAt},</if>
         <if test="createdAt != null">#{createdAt},</if>
         <if test="updatedAt != null">#{updatedAt},</if>
         </trim>
@@ -57,6 +59,7 @@
         <if test="status != null">status = #{status},</if>
         <if test="registerIp != null">register_ip = #{registerIp},</if>
         <if test="lastLoginAt != null">last_login_at = #{lastLoginAt},</if>
+        <if test="passwordChangedAt != null">password_changed_at = #{passwordChangedAt},</if>
         <if test="createdAt != null">created_at = #{createdAt},</if>
         <if test="updatedAt != null">updated_at = #{updatedAt},</if>
         </set>
@@ -66,25 +69,25 @@
         DELETE FROM users WHERE id = #{id}
     </delete>
     <select id="selectById" parameterType="long" resultType="com.school.social.entity.User">
-        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at FROM users WHERE id = #{id}
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, password_changed_at, created_at, updated_at FROM users WHERE id = #{id}
     </select>
     <select id="selectAll" resultType="com.school.social.entity.User">
-        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at FROM users
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, password_changed_at, created_at, updated_at FROM users
     </select>
     <select id="selectByUsername" resultType="com.school.social.entity.User">
-        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, password_changed_at, created_at, updated_at
         FROM users
         WHERE username = #{username}
         LIMIT 1
     </select>
     <select id="selectByEmail" resultType="com.school.social.entity.User">
-        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, password_changed_at, created_at, updated_at
         FROM users
         WHERE email = #{email}
         LIMIT 1
     </select>
     <select id="selectByPhone" resultType="com.school.social.entity.User">
-        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, created_at, updated_at
+        SELECT id, username, password_hash, email, phone, avatar_url, gender, birthday, school, college, grade, bio, status, register_ip, last_login_at, password_changed_at, created_at, updated_at
         FROM users
         WHERE phone = #{phone}
         LIMIT 1

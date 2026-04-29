@@ -56,7 +56,7 @@ const submit = async () => {
     setTimeout(() => {
       router.push(role.value === 'admin' ? '/admin' : '/home')
     }, 300)
-  } catch (error) {
+  } catch {
     error.value = '网络错误，请稍后再试。'
   } finally {
     loading.value = false
@@ -164,6 +164,10 @@ const submit = async () => {
         <div class="panel-foot">
           <span>还没有账号？</span>
           <RouterLink class="link" to="/register">立即注册</RouterLink>
+        </div>
+        <div class="panel-foot">
+          <span>忘记密码？</span>
+          <RouterLink class="link" to="/forgot-password">通过邮箱重置</RouterLink>
         </div>
       </main>
     </div>

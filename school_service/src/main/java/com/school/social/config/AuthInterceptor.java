@@ -3,16 +3,24 @@ package com.school.social.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.school.social.common.ApiResponse;
 import com.school.social.common.JwtUtil;
+import com.school.social.entity.User;
+import com.school.social.mapper.UserMapper;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.time.ZoneId;
 
 public class AuthInterceptor implements HandlerInterceptor {
     private static final String HEADER_AUTH = "Authorization";
     private static final String HEADER_TOKEN = "token";
     private static final String PREFIX = "Bearer ";
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final UserMapper userMapper;
+
+    public AuthInterceptor(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -23,6 +31,11 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
         Long userId = JwtUtil.getUserId(token);
         if (userId == null) {
+            writeUnauthorized(response);
+            return false;
+        }
+        User user = userMapper.selectById(userId);
+        if (user == null || !isTokenValid(token, user)) {
             writeUnauthorized(response);
             return false;
         }
@@ -44,6 +57,21 @@ public class AuthInterceptor implements HandlerInterceptor {
             return queryToken.trim();
         }
         return null;
+    }
+
+    private boolean isTokenValid(String token, User user) {
+        if (user.getPasswordChangedAt() == null) {
+            return true;
+        }
+        Long tokenPasswordChangedAt = JwtUtil.getPasswordChangedAtMillis(token);
+        if (tokenPasswordChangedAt == null) {
+            return false;
+        }
+        long currentPasswordChangedAt = user.getPasswordChangedAt()
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+        return currentPasswordChangedAt == tokenPasswordChangedAt;
     }
 
     private void writeUnauthorized(HttpServletResponse response) throws Exception {

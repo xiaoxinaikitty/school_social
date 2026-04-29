@@ -2,13 +2,18 @@ package com.school.social.controller;
 
 import com.school.social.common.ApiResponse;
 import com.school.social.common.JwtUtil;
+import com.school.social.dto.auth.ForgotPasswordSendCodeRequest;
+import com.school.social.dto.auth.ForgotPasswordVerifyCodeRequest;
 import com.school.social.dto.auth.LoginRequest;
 import com.school.social.dto.auth.LoginResponse;
 import com.school.social.dto.auth.RegisterRequest;
+import com.school.social.dto.auth.ResetPasswordRequest;
 import com.school.social.dto.auth.UserView;
 import com.school.social.entity.Role;
+import com.school.social.entity.User;
 import com.school.social.entity.UserRole;
 import com.school.social.mapper.RoleMapper;
+import com.school.social.mapper.UserMapper;
 import com.school.social.mapper.UserRoleMapper;
 import com.school.social.service.AuthService;
 import org.springframework.validation.annotation.Validated;
@@ -32,6 +37,10 @@ public class AuthController {
 
     @Resource
     private UserRoleMapper userRoleMapper;
+
+    @Resource
+    private UserMapper userMapper;
+
     @PostMapping("/register")
     public ApiResponse<UserView> register(@Validated @RequestBody RegisterRequest request,
                                           HttpServletRequest httpRequest) {
@@ -51,7 +60,7 @@ public class AuthController {
         try {
             String ip = resolveIp(httpRequest);
             UserView user = authService.login(request, ip);
-            String token = JwtUtil.generateToken(user.getId(), user.getUsername());
+            String token = generateToken(user.getId(), user.getUsername());
             return ApiResponse.success(new LoginResponse(token, user));
         } catch (IllegalArgumentException ex) {
             return ApiResponse.fail(ex.getMessage());
@@ -69,7 +78,7 @@ public class AuthController {
             if (!isAdmin(user.getId())) {
                 return ApiResponse.fail("非管理员账号");
             }
-            String token = JwtUtil.generateToken(user.getId(), user.getUsername());
+            String token = generateToken(user.getId(), user.getUsername());
             return ApiResponse.success(new LoginResponse(token, user));
         } catch (IllegalArgumentException ex) {
             return ApiResponse.fail(ex.getMessage());
@@ -81,6 +90,43 @@ public class AuthController {
     @PostMapping("/logout")
     public ApiResponse<Void> logout() {
         return ApiResponse.success(null);
+    }
+
+    @PostMapping("/password/forgot/send-code")
+    public ApiResponse<String> sendForgotPasswordCode(@Validated @RequestBody ForgotPasswordSendCodeRequest request,
+                                                      HttpServletRequest httpRequest) {
+        try {
+            authService.sendForgotPasswordCode(request.getEmail(), resolveIp(httpRequest));
+            return ApiResponse.success("如果该邮箱已注册，验证码已发送，请注意查收");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            return ApiResponse.fail(ex.getMessage());
+        } catch (Exception ex) {
+            return ApiResponse.fail("验证码发送失败");
+        }
+    }
+
+    @PostMapping("/password/forgot/verify-code")
+    public ApiResponse<String> verifyForgotPasswordCode(@Validated @RequestBody ForgotPasswordVerifyCodeRequest request) {
+        try {
+            authService.verifyForgotPasswordCode(request.getEmail(), request.getCode());
+            return ApiResponse.success("验证码校验通过");
+        } catch (IllegalArgumentException ex) {
+            return ApiResponse.fail(ex.getMessage());
+        } catch (Exception ex) {
+            return ApiResponse.fail("验证码校验失败");
+        }
+    }
+
+    @PostMapping("/password/reset")
+    public ApiResponse<String> resetPassword(@Validated @RequestBody ResetPasswordRequest request) {
+        try {
+            authService.resetPassword(request.getEmail(), request.getCode(), request.getNewPassword());
+            return ApiResponse.success("密码重置成功，请重新登录");
+        } catch (IllegalArgumentException ex) {
+            return ApiResponse.fail(ex.getMessage());
+        } catch (Exception ex) {
+            return ApiResponse.fail("密码重置失败");
+        }
     }
 
     private String resolveIp(HttpServletRequest request) {
@@ -104,5 +150,14 @@ public class AuthController {
         }
         UserRole link = userRoleMapper.selectByPk(userId, role.getId());
         return link != null;
+    }
+
+    private String generateToken(Long userId, String username) {
+        User user = userMapper.selectById(userId);
+        return JwtUtil.generateToken(
+                userId,
+                username,
+                user == null ? null : user.getPasswordChangedAt()
+        );
     }
 }

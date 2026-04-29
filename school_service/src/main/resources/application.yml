@@ -20,3 +20,18 @@ mybatis:
   type-aliases-package: com.school.social.entity
   configuration:
     map-underscore-to-camel-case: true
+
+app:
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:2071162373@qq.com}
+    password: ${MAIL_PASSWORD:klsroianqdgtdbjb}
+    from: ${MAIL_FROM:2071162373@qq.com}
+    use-ssl: ${MAIL_USE_SSL:true}
+  auth:
+    password-reset:
+      code-expire-minutes: 10
+      send-interval-seconds: 60
+      max-send-per-hour: 10
+      max-verify-attempts: 5
