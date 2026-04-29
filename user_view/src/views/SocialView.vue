@@ -337,6 +337,7 @@ onMounted(() => {
       </div>
       <div class="profile-actions">
         <button class="ghost-btn" type="button" @click="router.push('/home')">返回主页</button>
+        <button class="ghost-btn" type="button" @click="router.push('/chat')">进入群聊</button>
         <button class="ghost-btn" type="button" @click="loadNotifications(notifPage)">刷新通知</button>
       </div>
     </header>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.ChatRoomMemberMapper">
+    <insert id="insert" parameterType="com.school.social.entity.ChatRoomMember" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chat_room_member
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="roomId != null">room_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="roleType != null">role_type,</if>
+            <if test="muteUntil != null">mute_until,</if>
+            <if test="lastReadMessageId != null">last_read_message_id,</if>
+            <if test="joinedAt != null">joined_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="roomId != null">#{roomId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="roleType != null">#{roleType},</if>
+            <if test="muteUntil != null">#{muteUntil},</if>
+            <if test="lastReadMessageId != null">#{lastReadMessageId},</if>
+            <if test="joinedAt != null">#{joinedAt},</if>
+        </trim>
+    </insert>
+
+    <delete id="deleteByRoomIdAndUserId">
+        DELETE FROM chat_room_member WHERE room_id = #{roomId} AND user_id = #{userId}
+    </delete>
+
+    <select id="selectByRoomIdAndUserId" resultType="com.school.social.entity.ChatRoomMember">
+        SELECT id, room_id, user_id, role_type, mute_until, last_read_message_id, joined_at
+        FROM chat_room_member
+        WHERE room_id = #{roomId} AND user_id = #{userId}
+    </select>
+
+    <update id="updateLastReadMessageId">
+        UPDATE chat_room_member
+        SET last_read_message_id = #{lastReadMessageId}
+        WHERE room_id = #{roomId} AND user_id = #{userId}
+    </update>
+</mapper>

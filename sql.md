@@ -246,6 +246,49 @@ INSERT INTO recommend_config (id, enable_hot, enable_follow, enable_tag, weight_
 VALUES (1, 1, 1, 1, 0.400, 0.200, 0.200, 0.100, 0.100)
 ON DUPLICATE KEY UPDATE id = id;
 
+CREATE TABLE IF NOT EXISTS chat_room (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  avatar_url VARCHAR(255),
+  description VARCHAR(255),
+  owner_id BIGINT NOT NULL,
+  room_type TINYINT NOT NULL DEFAULT 0,
+  status TINYINT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_chat_room_owner (owner_id),
+  CONSTRAINT fk_chat_room_owner FOREIGN KEY (owner_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chat_room_member (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  room_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  role_type TINYINT NOT NULL DEFAULT 0,
+  mute_until DATETIME NULL,
+  last_read_message_id BIGINT NULL,
+  joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_chat_room_user (room_id, user_id),
+  INDEX idx_chat_room_member_room (room_id),
+  INDEX idx_chat_room_member_user (user_id),
+  CONSTRAINT fk_chat_member_room FOREIGN KEY (room_id) REFERENCES chat_room(id),
+  CONSTRAINT fk_chat_member_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chat_message (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  room_id BIGINT NOT NULL,
+  sender_id BIGINT NOT NULL,
+  content TEXT NOT NULL,
+  message_type TINYINT NOT NULL DEFAULT 0,
+  status TINYINT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_chat_message_room (room_id),
+  INDEX idx_chat_message_sender (sender_id),
+  CONSTRAINT fk_chat_message_room FOREIGN KEY (room_id) REFERENCES chat_room(id),
+  CONSTRAINT fk_chat_message_sender FOREIGN KEY (sender_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 
 -- 已存在数据库请执行（仅需一次）

@@ -21,10 +21,29 @@ public class UploadController {
 
     @PostMapping("/upload")
     public ApiResponse<Map<String, Object>> upload(@RequestParam("file") MultipartFile file) {
+        return saveFile(file, null);
+    }
+
+    @PostMapping("/upload/avatar")
+    public ApiResponse<Map<String, Object>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return ApiResponse.fail("文件不能为空");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return ApiResponse.fail("头像仅支持图片文件");
+        }
+        return saveFile(file, "avatars");
+    }
+
+    private ApiResponse<Map<String, Object>> saveFile(MultipartFile file, String subDir) {
         if (file == null || file.isEmpty()) {
             return ApiResponse.fail("文件不能为空");
         }
         String baseDir = System.getProperty("user.dir") + File.separator + "uploads";
+        if (subDir != null && !subDir.isEmpty()) {
+            baseDir = baseDir + File.separator + subDir;
+        }
         File dir = new File(baseDir);
         if (!dir.exists() && !dir.mkdirs()) {
             return ApiResponse.fail("无法创建上传目录");
@@ -45,6 +64,9 @@ public class UploadController {
         }
 
         String url = "/uploads/" + filename;
+        if (subDir != null && !subDir.isEmpty()) {
+            url = "/uploads/" + subDir + "/" + filename;
+        }
         Map<String, Object> data = new HashMap<>();
         data.put("url", url);
         data.put("name", original);

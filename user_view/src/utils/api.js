@@ -30,3 +30,19 @@ export const apiUpload = (path, formData, options = {}) => {
     headers,
   })
 }
+
+export const buildWsUrl = (path, params = {}) => {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  let origin = `${protocol}//${window.location.host}`
+  if (/^https?:\/\//.test(API_BASE)) {
+    const baseUrl = new URL(API_BASE)
+    origin = `${baseUrl.protocol === 'https:' ? 'wss:' : 'ws:'}//${baseUrl.host}`
+  }
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== '') {
+      query.set(key, String(value))
+    }
+  })
+  return `${origin}${path}${query.toString() ? `?${query.toString()}` : ''}`
+}

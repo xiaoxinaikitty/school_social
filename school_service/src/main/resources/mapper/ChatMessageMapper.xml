@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.ChatMessageMapper">
+    <insert id="insert" parameterType="com.school.social.entity.ChatMessage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chat_message
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="roomId != null">room_id,</if>
+            <if test="senderId != null">sender_id,</if>
+            <if test="content != null">content,</if>
+            <if test="messageType != null">message_type,</if>
+            <if test="status != null">status,</if>
+            <if test="createdAt != null">created_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="roomId != null">#{roomId},</if>
+            <if test="senderId != null">#{senderId},</if>
+            <if test="content != null">#{content},</if>
+            <if test="messageType != null">#{messageType},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createdAt != null">#{createdAt},</if>
+        </trim>
+    </insert>
+
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.ChatMessage">
+        SELECT id, room_id, sender_id, content, message_type, status, created_at
+        FROM chat_message
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectMessageViewById" parameterType="long" resultType="com.school.social.dto.chat.ChatMessageView">
+        SELECT cm.id,
+               cm.room_id,
+               cm.sender_id,
+               u.username AS sender_name,
+               u.avatar_url AS sender_avatar,
+               cm.content,
+               cm.message_type,
+               cm.created_at
+        FROM chat_message cm
+        LEFT JOIN users u ON u.id = cm.sender_id
+        WHERE cm.id = #{id}
+    </select>
+
+    <select id="selectMessageViewsByRoomId" resultType="com.school.social.dto.chat.ChatMessageView">
+        SELECT t.id,
+               t.room_id,
+               t.sender_id,
+               t.sender_name,
+               t.sender_avatar,
+               t.content,
+               t.message_type,
+               t.created_at
+        FROM (
+            SELECT cm.id,
+                   cm.room_id,
+                   cm.sender_id,
+                   u.username AS sender_name,
+                   u.avatar_url AS sender_avatar,
+                   cm.content,
+                   cm.message_type,
+                   cm.created_at
+            FROM chat_message cm
+            LEFT JOIN users u ON u.id = cm.sender_id
+            WHERE cm.room_id = #{roomId} AND cm.status = 0
+            ORDER BY cm.id DESC
+            LIMIT #{size} OFFSET #{offset}
+        ) t
+        ORDER BY t.id ASC
+    </select>
+
+    <select id="countByRoomId" resultType="int">
+        SELECT COUNT(1) FROM chat_message WHERE room_id = #{roomId} AND status = 0
+    </select>
+
+    <select id="selectLatestMessageIdByRoomId" resultType="long">
+        SELECT MAX(id) FROM chat_message WHERE room_id = #{roomId} AND status = 0
+    </select>
+</mapper>

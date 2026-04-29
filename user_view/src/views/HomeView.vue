@@ -375,6 +375,11 @@ onMounted(() => {
         <p>点赞评论、关注关系与消息提醒。</p>
         <span class="module-tag">社交连接</span>
       </RouterLink>
+      <RouterLink class="module-card link-card" to="/chat">
+        <h3>社区群聊</h3>
+        <p>加入公共群，实时参与校园聊天与主题讨论。</p>
+        <span class="module-tag">即时消息</span>
+      </RouterLink>
       <RouterLink class="module-card link-card" to="/profile">
         <h3>个人中心</h3>
         <p>个人资料、兴趣标签与内容管理。</p>

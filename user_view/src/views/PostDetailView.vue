@@ -33,6 +33,9 @@ const commentTotal = ref(0)
 const replyMap = ref({})
 const replyDrafts = ref({})
 const commentLikeMap = ref({})
+const activeEmojiTarget = ref('')
+
+const emojiList = ['😀', '😁', '😂', '😊', '😍', '🥳', '😎', '🤔', '😭', '😡', '👍', '👏', '🎉', '❤️', '🔥', '🌟']
 
 const showReportForm = ref(false)
 const reportTarget = ref({ targetType: 0, targetId: null })
@@ -221,6 +224,28 @@ const toggleReplies = (parentId) => {
   loadReplies(parentId)
 }
 
+const getReplyEmojiTarget = (parentId) => `reply-${parentId}`
+
+const toggleEmojiPicker = (target) => {
+  activeEmojiTarget.value = activeEmojiTarget.value === target ? '' : target
+}
+
+const insertEmoji = (emoji, target) => {
+  if (!emoji || !target) return
+  if (target === 'comment') {
+    commentContent.value = `${commentContent.value || ''}${emoji}`
+    return
+  }
+  if (target.startsWith('reply-')) {
+    const parentId = Number(target.replace('reply-', ''))
+    const current = replyDrafts.value[parentId] || ''
+    replyDrafts.value = {
+      ...replyDrafts.value,
+      [parentId]: `${current}${emoji}`,
+    }
+  }
+}
+
 const submitComment = async () => {
   commentError.value = ''
   actionSuccess.value = ''
@@ -250,6 +275,7 @@ const submitComment = async () => {
       return
     }
     commentContent.value = ''
+    activeEmojiTarget.value = ''
     await Promise.all([loadComments(1), loadStats()])
     actionSuccess.value = '评论已发布。'
   } catch (err) {
@@ -308,6 +334,9 @@ const submitReply = async (parentId) => {
       return
     }
     replyDrafts.value = { ...replyDrafts.value, [parentId]: '' }
+    if (activeEmojiTarget.value === getReplyEmojiTarget(parentId)) {
+      activeEmojiTarget.value = ''
+    }
     await Promise.all([loadReplies(parentId), loadStats()])
   } catch (err) {
     replyMap.value = {
@@ -701,6 +730,22 @@ onMounted(() => {
           <span>发表评论</span>
           <textarea v-model="commentContent" rows="3" placeholder="写下你的评论..."></textarea>
         </label>
+        <div class="emoji-toolbar">
+          <button class="ghost-btn" type="button" @click="toggleEmojiPicker('comment')">
+            {{ activeEmojiTarget === 'comment' ? '收起表情' : '选择表情' }}
+          </button>
+        </div>
+        <div v-if="activeEmojiTarget === 'comment'" class="emoji-picker">
+          <button
+            v-for="emoji in emojiList"
+            :key="`comment-${emoji}`"
+            class="emoji-btn"
+            type="button"
+            @click="insertEmoji(emoji, 'comment')"
+          >
+            {{ emoji }}
+          </button>
+        </div>
         <div class="profile-actions">
           <button class="primary-btn" type="submit" :disabled="commentLoading">
             {{ commentLoading ? '发布中...' : '发布评论' }}
@@ -769,9 +814,25 @@ onMounted(() => {
             <div class="reply-form">
               <label class="field">
                 <span>回复评论</span>
-              <input v-model="replyDrafts[item.id]" type="text" placeholder="回复这条评论..." />
+                <input v-model="replyDrafts[item.id]" type="text" placeholder="回复这条评论..." />
               </label>
-              <button class="ghost-btn" type="button" @click="submitReply(item.id)">回复</button>
+              <div class="reply-form-actions">
+                <button class="ghost-btn" type="button" @click="toggleEmojiPicker(getReplyEmojiTarget(item.id))">
+                  {{ activeEmojiTarget === getReplyEmojiTarget(item.id) ? '收起表情' : '表情' }}
+                </button>
+                <button class="ghost-btn" type="button" @click="submitReply(item.id)">回复</button>
+              </div>
+              <div v-if="activeEmojiTarget === getReplyEmojiTarget(item.id)" class="emoji-picker reply-emoji-picker">
+                <button
+                  v-for="emoji in emojiList"
+                  :key="`reply-${item.id}-${emoji}`"
+                  class="emoji-btn"
+                  type="button"
+                  @click="insertEmoji(emoji, getReplyEmojiTarget(item.id))"
+                >
+                  {{ emoji }}
+                </button>
+              </div>
             </div>
           </div>
         </div>

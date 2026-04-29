@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.school.social.mapper.ChatRoomMapper">
+    <insert id="insert" parameterType="com.school.social.entity.ChatRoom" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chat_room
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null">name,</if>
+            <if test="avatarUrl != null">avatar_url,</if>
+            <if test="description != null">description,</if>
+            <if test="ownerId != null">owner_id,</if>
+            <if test="roomType != null">room_type,</if>
+            <if test="status != null">status,</if>
+            <if test="createdAt != null">created_at,</if>
+            <if test="updatedAt != null">updated_at,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="name != null">#{name},</if>
+            <if test="avatarUrl != null">#{avatarUrl},</if>
+            <if test="description != null">#{description},</if>
+            <if test="ownerId != null">#{ownerId},</if>
+            <if test="roomType != null">#{roomType},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createdAt != null">#{createdAt},</if>
+            <if test="updatedAt != null">#{updatedAt},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.school.social.entity.ChatRoom">
+        UPDATE chat_room
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="avatarUrl != null">avatar_url = #{avatarUrl},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="ownerId != null">owner_id = #{ownerId},</if>
+            <if test="roomType != null">room_type = #{roomType},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="createdAt != null">created_at = #{createdAt},</if>
+            <if test="updatedAt != null">updated_at = #{updatedAt},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="long" resultType="com.school.social.entity.ChatRoom">
+        SELECT id, name, avatar_url, description, owner_id, room_type, status, created_at, updated_at
+        FROM chat_room
+        WHERE id = #{id}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(1) FROM chat_room
+    </select>
+
+    <select id="selectRoomViews" resultType="com.school.social.dto.chat.ChatRoomView">
+        SELECT r.id,
+               r.name,
+               r.avatar_url,
+               r.description,
+               r.owner_id,
+               r.room_type,
+               r.status,
+               CASE WHEN m.user_id IS NULL THEN 0 ELSE 1 END AS joined,
+               (SELECT COUNT(1) FROM chat_room_member rm WHERE rm.room_id = r.id) AS member_count,
+               CASE
+                   WHEN m.user_id IS NULL THEN 0
+                   ELSE COALESCE((SELECT COUNT(1)
+                                  FROM chat_message msg
+                                  WHERE msg.room_id = r.id
+                                    AND msg.status = 0
+                                    AND msg.sender_id != #{userId}
+                                    AND (m.last_read_message_id IS NULL OR msg.id &gt; m.last_read_message_id)), 0)
+               END AS unread_count,
+               (SELECT msg.content
+                FROM chat_message msg
+                WHERE msg.room_id = r.id AND msg.status = 0
+                ORDER BY msg.id DESC
+                LIMIT 1) AS last_message,
+               (SELECT msg.created_at
+                FROM chat_message msg
+                WHERE msg.room_id = r.id AND msg.status = 0
+                ORDER BY msg.id DESC
+                LIMIT 1) AS last_message_at,
+               r.created_at,
+               r.updated_at
+        FROM chat_room r
+        LEFT JOIN chat_room_member m ON m.room_id = r.id AND m.user_id = #{userId}
+        WHERE r.status = 0
+        ORDER BY COALESCE(
+            (SELECT msg.created_at
+             FROM chat_message msg
+             WHERE msg.room_id = r.id AND msg.status = 0
+             ORDER BY msg.id DESC
+             LIMIT 1),
+            r.created_at
+        ) DESC, r.id DESC
+    </select>
+</mapper>

@@ -7,6 +7,7 @@ import PostCreateView from '../views/PostCreateView.vue'
 import PostDetailView from '../views/PostDetailView.vue'
 import PostEditView from '../views/PostEditView.vue'
 import SocialView from '../views/SocialView.vue'
+import ChatView from '../views/ChatView.vue'
 import AdminHomeView from '../views/AdminHomeView.vue'
 import AdminReportsView from '../views/AdminReportsView.vue'
 import AdminOpsView from '../views/AdminOpsView.vue'
@@ -59,6 +60,11 @@ const router = createRouter({
       path: '/social',
       name: 'social',
       component: SocialView,
+    },
+    {
+      path: '/chat',
+      name: 'chat',
+      component: ChatView,
     },
     {
       path: '/admin',

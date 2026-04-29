@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch } from '../utils/api'
+import { apiFetch, apiUpload } from '../utils/api'
 
 const router = useRouter()
 const user = ref(null)
@@ -27,6 +27,10 @@ const loadingProfile = ref(false)
 const savingProfile = ref(false)
 const profileError = ref('')
 const profileSuccess = ref('')
+const avatarInputRef = ref(null)
+const uploadingAvatar = ref(false)
+const avatarUploadError = ref('')
+const avatarUploadMessage = ref('')
 
 const availableTags = ref([])
 const selectedTagIds = ref([])
@@ -162,6 +166,63 @@ const saveProfile = async () => {
     profileError.value = '网络错误，无法更新资料。'
   } finally {
     savingProfile.value = false
+  }
+}
+
+const triggerAvatarUpload = () => {
+  avatarUploadError.value = ''
+  avatarUploadMessage.value = ''
+  if (avatarInputRef.value) {
+    avatarInputRef.value.click()
+  }
+}
+
+const clearAvatar = () => {
+  profile.value.avatarUrl = ''
+  avatarUploadError.value = ''
+  avatarUploadMessage.value = '头像已清空，点击“保存资料”后写入数据库。'
+}
+
+const handleAvatarChange = async (event) => {
+  const [file] = Array.from(event.target?.files || [])
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    avatarUploadError.value = '请选择图片文件作为头像。'
+    if (event.target) {
+      event.target.value = ''
+    }
+    return
+  }
+
+  uploadingAvatar.value = true
+  profileError.value = ''
+  profileSuccess.value = ''
+  avatarUploadError.value = ''
+  avatarUploadMessage.value = ''
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await apiUpload('/api/upload/avatar', formData)
+    if (res.status === 401) {
+      profileError.value = '登录已过期，请重新登录。'
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      avatarUploadError.value = data.message || '头像上传失败。'
+      return
+    }
+    profile.value.avatarUrl = data.data?.url || ''
+    avatarUploadMessage.value = '头像已上传，点击“保存资料”后写入数据库。'
+  } catch (err) {
+    avatarUploadError.value = '网络错误，头像上传失败。'
+  } finally {
+    uploadingAvatar.value = false
+    if (event.target) {
+      event.target.value = ''
+    }
   }
 }
 
@@ -536,10 +597,35 @@ onMounted(() => {
               <input v-model="profile.phone" type="text" placeholder="8-20 位数字" />
             </label>
             <label class="field">
-              <span>头像地址</span>
-              <input v-model="profile.avatarUrl" type="text" placeholder="https://..." />
+              <span>头像上传</span>
+              <div class="avatar-upload-panel">
+                <div class="avatar-upload-actions">
+                  <button class="ghost-btn" type="button" @click="triggerAvatarUpload" :disabled="uploadingAvatar">
+                    {{ uploadingAvatar ? '上传中...' : '选择本地图片' }}
+                  </button>
+                  <button
+                    class="ghost-btn danger"
+                    type="button"
+                    @click="clearAvatar"
+                    :disabled="uploadingAvatar || !profile.avatarUrl"
+                  >
+                    移除头像
+                  </button>
+                </div>
+                <input
+                  ref="avatarInputRef"
+                  class="file-input"
+                  type="file"
+                  accept="image/*"
+                  @change="handleAvatarChange"
+                />
+                <span class="field-tip">支持从本地选择图片，上传后点击“保存资料”写入数据库。</span>
+                <input :value="profile.avatarUrl" type="text" readonly placeholder="尚未上传头像" />
+              </div>
             </label>
           </div>
+          <p v-if="avatarUploadError" class="form-alert error">{{ avatarUploadError }}</p>
+          <p v-if="avatarUploadMessage" class="form-alert success">{{ avatarUploadMessage }}</p>
           <div class="grid-2">
             <label class="field">
               <span>性别</span>
