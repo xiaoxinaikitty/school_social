@@ -17,6 +17,8 @@ const notifSize = ref(10)
 const notifTotal = ref(0)
 const notifFilter = ref('all')
 const unreadCount = ref(0)
+const friendRequestActionMap = ref({})
+const handledFriendRequestMap = ref({})
 
 const announcements = ref([])
 const announcementLoading = ref(false)
@@ -42,9 +44,6 @@ const reportListLoading = ref(false)
 const reportListError = ref('')
 const reportReasons = ['不实信息', '骚扰辱骂', '色情低俗', '违规广告', '侵犯隐私', '其他']
 
-const notifPages = computed(() => Math.max(1, Math.ceil(notifTotal.value / notifSize.value)))
-const announcementPages = computed(() => Math.max(1, Math.ceil(announcementTotal.value / announcementSize.value)))
-const reportPages = computed(() => Math.max(1, Math.ceil(reportTotal.value / reportSize.value)))
 const unreadNotifications = computed(() => notifications.value.filter((item) => item.isRead === 0).slice(0, 3))
 
 const authGuard = (res) => {
@@ -60,6 +59,8 @@ const notificationLabel = (type) => {
   if (type === 1) return '评论提醒'
   if (type === 2) return '回复提醒'
   if (type === 3) return '关注提醒'
+  if (type === 4) return '好友申请'
+  if (type === 5) return '好友结果'
   return '系统通知'
 }
 
@@ -73,7 +74,7 @@ const loadUnreadCount = async () => {
     const data = await res.json()
     if (!res.ok || data.code !== 0) return
     unreadCount.value = data.data ?? 0
-  } catch (error) {
+  } catch {
     // Ignore
   }
 }
@@ -95,7 +96,7 @@ const loadNotifications = async (page = 1) => {
     notifications.value = data.data?.list || []
     notifTotal.value = data.data?.total ?? 0
     notifPage.value = data.data?.page ?? page
-  } catch (error) {
+  } catch {
     notifError.value = '网络错误，无法获取通知。'
   } finally {
     notifLoading.value = false
@@ -114,7 +115,7 @@ const markRead = async (id) => {
     }
     notifications.value = notifications.value.map((item) => (item.id === id ? { ...item, isRead: 1 } : item))
     loadUnreadCount()
-  } catch (error) {
+  } catch {
     notifError.value = '网络错误，无法标记已读。'
   }
 }
@@ -130,7 +131,7 @@ const markAllRead = async () => {
     }
     notifications.value = notifications.value.map((item) => ({ ...item, isRead: 1 }))
     unreadCount.value = 0
-  } catch (error) {
+  } catch {
     notifError.value = '网络错误，无法全部已读。'
   }
 }
@@ -138,6 +139,46 @@ const markAllRead = async () => {
 const goNotificationTarget = (item) => {
   if (item.refType === 0 && item.refId) return router.push(`/posts/${item.refId}`)
   if (item.refType === 2 && item.refId) return router.push('/profile')
+  if (item.refType === 3) return router.push('/chat')
+  if (item.type === 4 || item.type === 5) return router.push('/chat')
+}
+
+const respondFriendRequest = async (item, approved) => {
+  if (!item?.refId) return
+  friendRequestActionMap.value = {
+    ...friendRequestActionMap.value,
+    [item.refId]: true,
+  }
+  try {
+    const res = await apiFetch(`/api/friends/requests/${item.refId}/respond`, {
+      method: 'POST',
+      body: JSON.stringify({ approved }),
+    })
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      notifError.value = data.message || '处理好友申请失败。'
+      if (data.message && data.message.includes('已经处理过')) {
+        handledFriendRequestMap.value = {
+          ...handledFriendRequestMap.value,
+          [item.refId]: true,
+        }
+      }
+      return
+    }
+    handledFriendRequestMap.value = {
+      ...handledFriendRequestMap.value,
+      [item.refId]: true,
+    }
+    await Promise.all([loadNotifications(notifPage.value || 1), loadUnreadCount()])
+  } catch {
+    notifError.value = '网络错误，无法处理好友申请。'
+  } finally {
+    friendRequestActionMap.value = {
+      ...friendRequestActionMap.value,
+      [item.refId]: false,
+    }
+  }
 }
 
 const loadAnnouncements = async (page = 1) => {
@@ -157,7 +198,7 @@ const loadAnnouncements = async (page = 1) => {
     if (!activeAnnouncement.value && announcements.value.length) {
       activeAnnouncement.value = announcements.value[0]
     }
-  } catch (error) {
+  } catch {
     announcementError.value = '网络错误，无法获取公告。'
   } finally {
     announcementLoading.value = false
@@ -176,7 +217,7 @@ const loadAnnouncementDetail = async (id) => {
       return
     }
     activeAnnouncement.value = data.data
-  } catch (error) {
+  } catch {
     announcementError.value = '网络错误，无法获取公告详情。'
   }
 }
@@ -210,7 +251,7 @@ const submitReport = async () => {
     reportReason.value = ''
     reportDetail.value = ''
     loadReportList(1)
-  } catch (error) {
+  } catch {
     reportError.value = '网络错误，无法提交举报。'
   } finally {
     reportLoading.value = false
@@ -234,7 +275,7 @@ const loadReportList = async (page = 1) => {
     reportList.value = data.data?.list || []
     reportTotal.value = data.data?.total ?? 0
     reportPage.value = data.data?.page ?? page
-  } catch (error) {
+  } catch {
     reportListError.value = '网络错误，无法获取举报记录。'
   } finally {
     reportListLoading.value = false
@@ -308,6 +349,24 @@ onMounted(() => {
                 </div>
                 <div class="campus-inline-actions">
                   <el-button plain @click="goNotificationTarget(item)">查看</el-button>
+                  <el-button
+                    v-if="item.type === 4 && handledFriendRequestMap[item.refId] !== true"
+                    type="primary"
+                    plain
+                    :loading="friendRequestActionMap[item.refId] === true"
+                    @click="respondFriendRequest(item, true)"
+                  >
+                    同意
+                  </el-button>
+                  <el-button
+                    v-if="item.type === 4 && handledFriendRequestMap[item.refId] !== true"
+                    type="danger"
+                    plain
+                    :loading="friendRequestActionMap[item.refId] === true"
+                    @click="respondFriendRequest(item, false)"
+                  >
+                    拒绝
+                  </el-button>
                   <el-button plain :disabled="item.isRead === 1" @click="markRead(item.id)">
                     {{ item.isRead === 1 ? '已读' : '标记已读' }}
                   </el-button>

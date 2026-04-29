@@ -31,11 +31,6 @@ const unreadCount = ref(0)
 const recommendTotal = ref(0)
 const recommendLoading = ref(false)
 
-const totalPages = computed(() => {
-  const pages = Math.ceil(total.value / size.value)
-  return pages > 0 ? pages : 1
-})
-
 const displayName = computed(() => user.value?.username || '同学')
 const roleLabel = computed(() => (role.value === 'admin' ? '管理员' : '学生'))
 const activeFeedTab = computed(() => (feedType.value === 'search' ? 'search' : feedType.value))
@@ -102,7 +97,7 @@ const trackRecommendationClick = async (postId) => {
         scene: 0,
       }),
     })
-  } catch (error) {
+  } catch {
     // Ignore recommendation tracking failures
   }
 }
@@ -119,7 +114,7 @@ const handleRecommendedPostOpen = (post) => {
 const logout = async () => {
   try {
     await apiFetch('/api/auth/logout', { method: 'POST' })
-  } catch (error) {
+  } catch {
     // Ignore network errors on logout
   } finally {
     localStorage.removeItem('auth_token')
@@ -147,7 +142,7 @@ const loadTags = async () => {
     if (!activeTagId.value && tags.value.length) {
       activeTagId.value = tags.value[0].id
     }
-  } catch (error) {
+  } catch {
     tagError.value = '网络错误，无法获取话题列表。'
   } finally {
     tagLoading.value = false
@@ -164,7 +159,7 @@ const loadUnreadCount = async () => {
     const data = await res.json()
     if (!res.ok || data.code !== 0) return
     unreadCount.value = data.data ?? 0
-  } catch (error) {
+  } catch {
     // Ignore
   }
 }
@@ -180,7 +175,7 @@ const loadRecommendSummary = async () => {
     const data = await res.json()
     if (!res.ok || data.code !== 0) return
     recommendTotal.value = data.data?.total ?? 0
-  } catch (error) {
+  } catch {
     // Ignore
   } finally {
     recommendLoading.value = false
@@ -237,7 +232,7 @@ const loadFeed = async () => {
     }
     feeds.value = data.data?.list || []
     total.value = data.data?.total ?? 0
-  } catch (error) {
+  } catch {
     feedError.value = '网络错误，无法获取内容。'
   } finally {
     feedLoading.value = false
@@ -288,7 +283,7 @@ onMounted(() => {
     if (savedUser) user.value = JSON.parse(savedUser)
     const savedRole = localStorage.getItem('auth_role')
     if (savedRole) role.value = savedRole
-  } catch (error) {
+  } catch {
     user.value = null
   }
   loadTags()

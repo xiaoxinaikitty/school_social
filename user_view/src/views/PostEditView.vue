@@ -51,7 +51,7 @@ const loadAvailableTags = async () => {
       return
     }
     availableTags.value = data.data || []
-  } catch (error) {
+  } catch {
     tagsError.value = '网络错误，无法获取标签列表。'
   } finally {
     loadingTags.value = false
@@ -83,7 +83,7 @@ const loadDetail = async () => {
       mediaType: item.mediaType ?? 0,
       sortOrder: item.sortOrder ?? idx + 1,
     }))
-  } catch (error) {
+  } catch {
     error.value = '网络错误，无法获取详情。'
   } finally {
     loading.value = false
@@ -123,7 +123,7 @@ const handleFiles = async (event) => {
         })
       }
     }
-  } catch (error) {
+  } catch {
     uploadError.value = '网络错误，上传失败。'
   } finally {
     uploading.value = false
@@ -161,7 +161,7 @@ const submit = async () => {
     }
     success.value = '保存成功。'
     setTimeout(() => router.push(`/posts/${route.params.id}`), 600)
-  } catch (error) {
+  } catch {
     error.value = '网络错误，请稍后再试。'
   } finally {
     loading.value = false

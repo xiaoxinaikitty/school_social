@@ -131,4 +131,38 @@
                 OR phone LIKE CONCAT('%', #{keyword}, '%'))
             </if>
         </where>
-    </select></mapper>
+    </select>
+    <select id="searchUserViews" resultType="com.school.social.dto.auth.UserView">
+        SELECT id, username, email, phone, avatar_url, gender, school, college, grade, bio, status,
+               last_login_at, created_at
+        FROM users
+        <where>
+            status = 0
+            AND id != #{excludeUserId}
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    username LIKE CONCAT('%', #{keyword}, '%')
+                    OR school LIKE CONCAT('%', #{keyword}, '%')
+                    OR college LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    <select id="countSearchUserViews" resultType="int">
+        SELECT COUNT(1)
+        FROM users
+        <where>
+            status = 0
+            AND id != #{excludeUserId}
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    username LIKE CONCAT('%', #{keyword}, '%')
+                    OR school LIKE CONCAT('%', #{keyword}, '%')
+                    OR college LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+    </select>
+</mapper>

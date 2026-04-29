@@ -68,10 +68,6 @@ const recommendOverview = ref({
   topPosts: [],
 })
 
-const announcementPages = computed(() => Math.max(Math.ceil(announcementTotal.value / announcementSize.value), 1))
-const approvedPages = computed(() => Math.max(Math.ceil(approvedTotal.value / approvedSize.value), 1))
-const userPages = computed(() => Math.max(Math.ceil(userTotal.value / userSize.value), 1))
-
 const filteredApprovedPosts = computed(() => {
   const keyword = postSearch.value.trim().toLowerCase()
   if (!keyword) return approvedPosts.value

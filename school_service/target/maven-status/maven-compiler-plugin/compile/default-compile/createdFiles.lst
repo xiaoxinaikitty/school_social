@@ -10,6 +10,7 @@ com\school\social\controller\FavoriteController.class
 com\school\social\mapper\LikeMapper.class
 com\school\social\mapper\AuditLogMapper.class
 com\school\social\service\UserTagService.class
+com\school\social\service\FriendService.class
 com\school\social\controller\PostTagController.class
 com\school\social\service\ChatService.class
 com\school\social\service\impl\PostTagServiceImpl.class
@@ -31,6 +32,8 @@ com\school\social\mapper\FavoriteMapper.class
 com\school\social\mapper\PostMapper.class
 com\school\social\dto\chat\ChatSocketMessageRequest.class
 com\school\social\service\impl\UserServiceImpl.class
+com\school\social\dto\friend\FriendCandidateView.class
+com\school\social\service\impl\FriendServiceImpl.class
 com\school\social\dto\admin\RecommendOverview.class
 com\school\social\controller\PostMediaController.class
 com\school\social\entity\Comment.class
@@ -41,11 +44,14 @@ com\school\social\entity\Announcement.class
 com\school\social\mapper\RecommendationLogMapper.class
 com\school\social\service\FavoriteService.class
 com\school\social\entity\Notification.class
+com\school\social\entity\FriendRequest.class
 com\school\social\controller\ReportController.class
 com\school\social\entity\ChatRoom.class
 com\school\social\controller\BehaviorLogController.class
 com\school\social\service\impl\ChatServiceImpl.class
+com\school\social\mapper\FriendRequestMapper.class
 com\school\social\dto\recommend\RecommendationFeedbackRequest.class
+com\school\social\controller\FriendController.class
 com\school\social\service\impl\RecommendationServiceImpl.class
 com\school\social\service\BehaviorLogService.class
 com\school\social\mapper\ReportMapper.class
@@ -80,6 +86,7 @@ com\school\social\service\impl\ReportServiceImpl.class
 com\school\social\mapper\BehaviorLogMapper.class
 com\school\social\entity\User.class
 com\school\social\service\impl\AuthServiceImpl.class
+com\school\social\mapper\FriendshipMapper.class
 com\school\social\common\ApiResponse.class
 com\school\social\controller\UserController.class
 com\school\social\dto\chat\ChatRoomCreateRequest.class
@@ -94,6 +101,7 @@ com\school\social\dto\auth\UserView.class
 com\school\social\service\PostTagService.class
 com\school\social\entity\ChatMessage.class
 com\school\social\dto\admin\RecommendPostStat.class
+com\school\social\entity\Friendship.class
 com\school\social\entity\PostTag.class
 com\school\social\entity\UserTag.class
 com\school\social\dto\chat\ChatMessageView.class
@@ -101,6 +109,7 @@ com\school\social\controller\TagController.class
 com\school\social\service\impl\BehaviorLogServiceImpl.class
 com\school\social\service\UserService.class
 com\school\social\mapper\NotificationMapper.class
+com\school\social\dto\friend\FriendRequestCreateRequest.class
 com\school\social\service\impl\FavoriteServiceImpl.class
 com\school\social\service\impl\UserTagServiceImpl.class
 com\school\social\service\impl\CommentServiceImpl.class
@@ -117,6 +126,7 @@ com\school\social\service\NotificationService.class
 com\school\social\dto\auth\RegisterRequest.class
 com\school\social\controller\FollowController.class
 com\school\social\service\impl\NotificationServiceImpl.class
+com\school\social\dto\friend\FriendRequestRespondRequest.class
 com\school\social\dto\admin\RecommendSceneStat.class
 com\school\social\service\impl\FollowServiceImpl.class
 com\school\social\service\TagService.class

@@ -115,7 +115,7 @@ const loadStats = async () => {
       return
     }
     stats.value = data.data
-  } catch (error) {
+  } catch {
     statsError.value = '网络错误，无法获取统计。'
   } finally {
     statsLoading.value = false
@@ -134,7 +134,7 @@ const loadRelated = async () => {
       return
     }
     related.value = data.data || []
-  } catch (error) {
+  } catch {
     relatedError.value = '网络错误，无法获取相关推荐。'
   } finally {
     relatedLoading.value = false
@@ -155,7 +155,7 @@ const loadComments = async (page = 1) => {
     comments.value = data.data?.list || []
     commentTotal.value = data.data?.total ?? 0
     commentPage.value = data.data?.page ?? page
-  } catch (error) {
+  } catch {
     commentError.value = '网络错误，无法获取评论。'
   } finally {
     commentsLoading.value = false
@@ -175,7 +175,7 @@ const loadDetail = async () => {
     }
     detail.value = data.data
     await Promise.all([loadStats(), loadRelated(), loadComments(1)])
-  } catch (error) {
+  } catch {
     error.value = '网络错误，无法获取详情。'
   } finally {
     loading.value = false
@@ -193,7 +193,7 @@ const loadReplies = async (parentId) => {
       return
     }
     replyMap.value = { ...replyMap.value, [parentId]: { list: data.data?.list || [], loading: false, expanded: true, error: '' } }
-  } catch (error) {
+  } catch {
     replyMap.value = { ...replyMap.value, [parentId]: { ...(replyMap.value[parentId] || {}), loading: false, expanded: true, error: '网络错误，无法获取回复。' } }
   }
 }
@@ -229,7 +229,7 @@ const submitComment = async () => {
     activeEmojiTarget.value = ''
     await Promise.all([loadComments(1), loadStats()])
     actionSuccess.value = '评论已发布。'
-  } catch (error) {
+  } catch {
     commentError.value = '网络错误，无法发表评论。'
   } finally {
     commentSubmitting.value = false
@@ -259,7 +259,7 @@ const submitReply = async (parentId) => {
       activeEmojiTarget.value = ''
     }
     await Promise.all([loadReplies(parentId), loadStats()])
-  } catch (error) {
+  } catch {
     replyMap.value = { ...replyMap.value, [parentId]: { ...(replyMap.value[parentId] || {}), loading: false, error: '网络错误，无法回复。', expanded: true } }
   }
 }
@@ -267,7 +267,7 @@ const submitReply = async (parentId) => {
 const deleteComment = async (commentId) => {
   try {
     await ElMessageBox.confirm('确定删除这条评论吗？', '删除评论', { type: 'warning' })
-  } catch (error) {
+  } catch {
     return
   }
   try {
@@ -279,7 +279,7 @@ const deleteComment = async (commentId) => {
       return
     }
     await Promise.all([loadComments(commentPage.value || 1), loadStats()])
-  } catch (error) {
+  } catch {
     commentError.value = '网络错误，无法删除评论。'
   }
 }
@@ -299,7 +299,7 @@ const toggleLike = async () => {
     }
     liked.value = !liked.value
     await loadStats()
-  } catch (error) {
+  } catch {
     actionError.value = '网络错误，操作失败。'
   }
 }
@@ -319,7 +319,7 @@ const toggleFavorite = async () => {
     }
     favorited.value = !favorited.value
     await loadStats()
-  } catch (error) {
+  } catch {
     actionError.value = '网络错误，操作失败。'
   }
 }
@@ -339,7 +339,7 @@ const toggleFollow = async () => {
     }
     following.value = !following.value
     actionSuccess.value = following.value ? '已关注该作者。' : '已取消关注。'
-  } catch (error) {
+  } catch {
     actionError.value = '网络错误，操作失败。'
   }
 }
@@ -355,7 +355,7 @@ const sharePost = async () => {
       return
     }
     actionSuccess.value = '分享记录已保存。'
-  } catch (error) {
+  } catch {
     actionError.value = '网络错误，分享失败。'
   }
 }
@@ -374,7 +374,7 @@ const toggleCommentLike = async (comment) => {
     }
     comment.likeCount = current ? Math.max((comment.likeCount || 0) - 1, 0) : (comment.likeCount || 0) + 1
     commentLikeMap.value = { ...commentLikeMap.value, [comment.id]: !current }
-  } catch (error) {
+  } catch {
     commentError.value = '网络错误，操作失败。'
   }
 }
@@ -412,7 +412,7 @@ const submitReport = async () => {
       return
     }
     reportSuccess.value = '举报已提交，我们会尽快处理。'
-  } catch (error) {
+  } catch {
     reportError.value = '网络错误，无法提交举报。'
   } finally {
     reportLoading.value = false
@@ -428,7 +428,7 @@ onMounted(() => {
   try {
     const savedUser = localStorage.getItem('auth_user')
     if (savedUser) currentUser.value = JSON.parse(savedUser)
-  } catch (error) {
+  } catch {
     currentUser.value = null
   }
   loadDetail()

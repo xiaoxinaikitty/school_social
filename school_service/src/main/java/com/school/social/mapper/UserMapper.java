@@ -1,6 +1,7 @@
 package com.school.social.mapper;
 
 import com.school.social.entity.User;
+import com.school.social.dto.auth.UserView;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -24,5 +25,12 @@ public interface UserMapper {
                            @Param("offset") int offset,
                            @Param("size") int size);
     int countByCondition(@Param("keyword") String keyword, @Param("status") Integer status);
+
+    List<UserView> searchUserViews(@Param("keyword") String keyword,
+                                   @Param("excludeUserId") Long excludeUserId,
+                                   @Param("offset") int offset,
+                                   @Param("size") int size);
+
+    int countSearchUserViews(@Param("keyword") String keyword, @Param("excludeUserId") Long excludeUserId);
 }
 

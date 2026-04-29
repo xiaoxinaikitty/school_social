@@ -116,7 +116,7 @@ const loadProfile = async () => {
     }
     syncProfile(data.data)
     localStorage.setItem('auth_user', JSON.stringify(data.data))
-  } catch (error) {
+  } catch {
     profileError.value = '网络错误，无法获取资料。'
   } finally {
     loadingProfile.value = false
@@ -150,7 +150,7 @@ const saveProfile = async () => {
     syncProfile(data.data)
     localStorage.setItem('auth_user', JSON.stringify(data.data))
     profileSuccess.value = '资料已更新。'
-  } catch (error) {
+  } catch {
     profileError.value = '网络错误，无法更新资料。'
   } finally {
     savingProfile.value = false
@@ -203,7 +203,7 @@ const handleAvatarChange = async (event) => {
     }
     profile.value.avatarUrl = data.data?.url || ''
     avatarUploadMessage.value = '头像已上传，点击“保存资料”后写入数据库。'
-  } catch (error) {
+  } catch {
     avatarUploadError.value = '网络错误，头像上传失败。'
   } finally {
     uploadingAvatar.value = false
@@ -225,7 +225,7 @@ const loadAvailableTags = async () => {
       return
     }
     availableTags.value = data.data || []
-  } catch (error) {
+  } catch {
     tagsError.value = '网络错误，无法获取标签列表。'
   } finally {
     loadingTags.value = false
@@ -243,7 +243,7 @@ const loadUserTags = async () => {
       return
     }
     selectedTagIds.value = (data.data || []).map((item) => item.tagId)
-  } catch (error) {
+  } catch {
     tagsError.value = '网络错误，无法获取标签。'
   }
 }
@@ -262,7 +262,7 @@ const saveUserTags = async () => {
     if (!res.ok || data.code !== 0) {
       tagsError.value = data.message || '更新标签失败。'
     }
-  } catch (error) {
+  } catch {
     tagsError.value = '网络错误，无法更新标签。'
   } finally {
     loadingTags.value = false
@@ -283,7 +283,7 @@ const loadPosts = async (page = 1) => {
     }
     postsData.value = data.data
     postsPage.value = data.data.page
-  } catch (error) {
+  } catch {
     feedError.value = '网络错误，无法获取发布。'
   } finally {
     loadingPosts.value = false
@@ -304,7 +304,7 @@ const loadFavorites = async (page = 1) => {
     }
     favoritesData.value = data.data
     favoritesPage.value = data.data.page
-  } catch (error) {
+  } catch {
     feedError.value = '网络错误，无法获取收藏。'
   } finally {
     loadingFavorites.value = false
@@ -325,7 +325,7 @@ const loadComments = async (page = 1) => {
     }
     commentsData.value = data.data
     commentsPage.value = data.data.page
-  } catch (error) {
+  } catch {
     feedError.value = '网络错误，无法获取评论。'
   } finally {
     loadingComments.value = false
@@ -343,7 +343,7 @@ const loadFollowStats = async () => {
       return
     }
     followStats.value = data.data || { followingCount: 0, followerCount: 0 }
-  } catch (error) {
+  } catch {
     socialError.value = '网络错误，无法获取关注统计。'
   }
 }
@@ -361,7 +361,7 @@ const loadFollowing = async (page = 1) => {
     }
     followingData.value = data.data
     followingPage.value = data.data.page
-  } catch (error) {
+  } catch {
     socialError.value = '网络错误，无法获取关注列表。'
   } finally {
     loadingFollowing.value = false
@@ -381,7 +381,7 @@ const loadFollowers = async (page = 1) => {
     }
     followersData.value = data.data
     followersPage.value = data.data.page
-  } catch (error) {
+  } catch {
     socialError.value = '网络错误，无法获取粉丝列表。'
   } finally {
     loadingFollowers.value = false
@@ -399,7 +399,7 @@ const followUser = async (userId) => {
       return
     }
     await Promise.all([loadFollowStats(), loadFollowing(followingPage.value || 1), loadFollowers(followersPage.value || 1)])
-  } catch (error) {
+  } catch {
     socialError.value = '网络错误，关注失败。'
   }
 }
@@ -415,7 +415,7 @@ const unfollowUser = async (userId) => {
       return
     }
     await Promise.all([loadFollowStats(), loadFollowing(followingPage.value || 1), loadFollowers(followersPage.value || 1)])
-  } catch (error) {
+  } catch {
     socialError.value = '网络错误，取消关注失败。'
   }
 }
@@ -443,7 +443,7 @@ const deletePost = async (postId) => {
       return
     }
     loadPosts(postsPage.value || 1)
-  } catch (error) {
+  } catch {
     feedError.value = '网络错误，无法删除。'
   }
 }
@@ -452,7 +452,7 @@ onMounted(() => {
   try {
     const savedUser = localStorage.getItem('auth_user')
     if (savedUser) user.value = JSON.parse(savedUser)
-  } catch (error) {
+  } catch {
     user.value = null
   }
   loadProfile()

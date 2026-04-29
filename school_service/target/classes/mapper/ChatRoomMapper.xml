@@ -52,9 +52,9 @@
 
     <select id="selectRoomViews" resultType="com.school.social.dto.chat.ChatRoomView">
         SELECT r.id,
-               r.name,
-               r.avatar_url,
-               r.description,
+               CASE WHEN r.room_type = 1 THEN COALESCE(ou.username, r.name) ELSE r.name END AS name,
+               CASE WHEN r.room_type = 1 THEN ou.avatar_url ELSE r.avatar_url END AS avatar_url,
+               CASE WHEN r.room_type = 1 THEN CONCAT('与 ', COALESCE(ou.username, '好友'), ' 的私聊') ELSE r.description END AS description,
                r.owner_id,
                r.room_type,
                r.status,
@@ -83,7 +83,15 @@
                r.updated_at
         FROM chat_room r
         LEFT JOIN chat_room_member m ON m.room_id = r.id AND m.user_id = #{userId}
+        LEFT JOIN users ou ON ou.id = (
+            SELECT rm.user_id
+            FROM chat_room_member rm
+            WHERE rm.room_id = r.id AND rm.user_id != #{userId}
+            ORDER BY rm.id ASC
+            LIMIT 1
+        )
         WHERE r.status = 0
+          AND (r.room_type != 1 OR m.user_id IS NOT NULL)
         ORDER BY COALESCE(
             (SELECT msg.created_at
              FROM chat_message msg

@@ -50,7 +50,7 @@ const loadAvailableTags = async () => {
       return
     }
     availableTags.value = data.data || []
-  } catch (error) {
+  } catch {
     tagsError.value = '网络错误，无法获取标签列表。'
   } finally {
     loadingTags.value = false
@@ -90,7 +90,7 @@ const handleFiles = async (event) => {
         })
       }
     }
-  } catch (error) {
+  } catch {
     uploadError.value = '网络错误，上传失败。'
   } finally {
     uploading.value = false
@@ -128,7 +128,7 @@ const submit = async () => {
     }
     success.value = isDraft.value ? '草稿已保存。' : '发布成功。'
     setTimeout(() => router.push('/home'), 700)
-  } catch (error) {
+  } catch {
     error.value = '网络错误，请稍后再试。'
   } finally {
     loading.value = false

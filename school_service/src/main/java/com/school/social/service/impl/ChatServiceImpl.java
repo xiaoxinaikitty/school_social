@@ -22,6 +22,7 @@ import java.util.List;
 @Transactional
 public class ChatServiceImpl implements ChatService {
     private static final int ROOM_TYPE_PUBLIC = 0;
+    private static final int ROOM_TYPE_DIRECT = 1;
     private static final int ROOM_STATUS_NORMAL = 0;
     private static final int MEMBER_ROLE_NORMAL = 0;
     private static final int MEMBER_ROLE_OWNER = 2;
@@ -82,6 +83,9 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void joinRoom(Long userId, Long roomId) {
         ChatRoom room = requireRoom(roomId);
+        if (room.getRoomType() != null && room.getRoomType() == ROOM_TYPE_DIRECT) {
+            throw new IllegalArgumentException("好友私聊不支持手动加入");
+        }
         if (!isRoomStatusNormal(room.getStatus())) {
             throw new IllegalArgumentException("群聊不可加入");
         }
@@ -100,6 +104,9 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void quitRoom(Long userId, Long roomId) {
         ChatRoom room = requireRoom(roomId);
+        if (room.getRoomType() != null && room.getRoomType() == ROOM_TYPE_DIRECT) {
+            throw new IllegalArgumentException("好友私聊不支持退出");
+        }
         if (room.getOwnerId() != null && room.getOwnerId().equals(userId)) {
             throw new IllegalArgumentException("群主暂不支持退出群聊");
         }

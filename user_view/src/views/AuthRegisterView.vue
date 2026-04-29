@@ -71,7 +71,7 @@ const submit = async () => {
       return
     }
     success.value = '注册成功，可前往登录。'
-  } catch (err) {
+  } catch {
     error.value = '网络错误，请稍后再试。'
   } finally {
     loading.value = false

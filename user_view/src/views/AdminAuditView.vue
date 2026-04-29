@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { RefreshRight, View } from '@element-plus/icons-vue'
@@ -21,8 +21,6 @@ const statusOptions = [
   { label: '已通过', value: 1 },
   { label: '已驳回', value: 2 },
 ]
-
-const totalPages = computed(() => Math.max(Math.ceil(total.value / size.value), 1))
 
 const statusLabel = (status) => {
   if (status === 1) return { label: '通过', type: 'success' }

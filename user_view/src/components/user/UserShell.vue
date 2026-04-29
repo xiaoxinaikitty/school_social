@@ -40,7 +40,7 @@ onMounted(() => {
     if (savedRole) {
       currentRole.value = savedRole
     }
-  } catch (error) {
+  } catch {
     currentUser.value = null
   }
 })
