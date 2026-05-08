@@ -62,7 +62,7 @@ const loadingFollowing = ref(false)
 const loadingFollowers = ref(false)
 const socialError = ref('')
 
-const displayName = computed(() => profile.value.username || '同学')
+const displayName = computed(() => profile.value.username || '用户')
 const accountStatus = computed(() =>
   profile.value.status === 0
     ? { label: '账号正常', type: 'success' }

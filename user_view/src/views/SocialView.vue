@@ -506,7 +506,7 @@ onMounted(() => {
           <div class="campus-side-list">
             <div class="campus-side-item">
               <p class="campus-side-item__title"><el-icon><ChatDotRound /></el-icon> 社区群聊</p>
-              <p class="campus-side-item__desc">进入社区群聊，与其他同学实时交流校园动态和热门话题。</p>
+              <p class="campus-side-item__desc">进入社区群聊，与其他用户实时交流校园动态和热门话题。</p>
               <el-button type="primary" plain @click="router.push('/chat')">进入群聊</el-button>
             </div>
             <div class="campus-side-item">

@@ -540,7 +540,7 @@ onBeforeUnmount(() => {
           <form class="chat-room-form" @submit.prevent="loadFriendCandidates(1)">
             <label class="field">
               <span>搜索用户</span>
-              <input v-model="friendKeyword" type="text" maxlength="50" placeholder="按用户名、学校或学院搜索同学" />
+              <input v-model="friendKeyword" type="text" maxlength="50" placeholder="按用户名、学校或学院搜索用户" />
             </label>
             <div class="chat-search-actions">
               <button class="primary-btn" type="submit" :disabled="friendSearchLoading">
@@ -603,7 +603,7 @@ onBeforeUnmount(() => {
         <div v-if="roomError" class="form-alert error">{{ roomError }}</div>
         <div v-if="roomsLoading" class="feed-empty">聊天列表加载中...</div>
         <div v-else-if="displayedRooms.length === 0" class="feed-empty">
-          {{ activeMode === 'friend' ? '暂无好友私聊入口，先搜索同学并发送好友申请。' : '暂无群聊，先创建一个吧。' }}
+          {{ activeMode === 'friend' ? '暂无好友私聊入口，先搜索用户并发送好友申请。' : '暂无群聊，先创建一个吧。' }}
         </div>
         <div v-else class="chat-room-list">
           <article

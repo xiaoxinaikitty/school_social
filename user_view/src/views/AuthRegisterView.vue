@@ -89,14 +89,14 @@ const submit = async () => {
           <span class="brand-dot"></span>
           <span class="brand-name">校园社交平台</span>
         </div>
-        <p class="eyebrow">学生注册</p>
+        <p class="eyebrow">用户注册</p>
         <h1 class="hero-title">创建你的校园账号。</h1>
         <p class="hero-copy">
           进入社区，分享内容、关注社团，并获得个性化推荐。
         </p>
         <div class="hero-cards">
           <div class="mini-card" style="animation-delay: 0.05s">
-            <p class="mini-title">角色：学生</p>
+            <p class="mini-title">角色：用户</p>
             <p class="mini-note">管理员账号由系统统一创建。</p>
           </div>
           <div class="mini-card" style="animation-delay: 0.12s">

@@ -84,7 +84,7 @@ const submit = async () => {
             type="button"
             @click="setRole('user')"
           >
-            学生
+            用户
           </button>
           <button
             class="role-pill"
@@ -149,7 +149,7 @@ const submit = async () => {
           </label>
 
           <div class="form-meta">
-            <span>当前角色：<strong>{{ role === 'admin' ? '管理员' : '学生' }}</strong></span>
+            <span>当前角色：<strong>{{ role === 'admin' ? '管理员' : '用户' }}</strong></span>
             <span class="muted">登录凭证将保存到本地。</span>
           </div>
 

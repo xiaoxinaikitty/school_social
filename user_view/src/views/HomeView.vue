@@ -31,8 +31,8 @@ const unreadCount = ref(0)
 const recommendTotal = ref(0)
 const recommendLoading = ref(false)
 
-const displayName = computed(() => user.value?.username || '同学')
-const roleLabel = computed(() => (role.value === 'admin' ? '管理员' : '学生'))
+const displayName = computed(() => user.value?.username || '用户')
+const roleLabel = computed(() => (role.value === 'admin' ? '管理员' : '用户'))
 const activeFeedTab = computed(() => (feedType.value === 'search' ? 'search' : feedType.value))
 const spotlightPost = computed(() => feeds.value[0] || null)
 const sideFeed = computed(() => feeds.value.slice(1, 4))
@@ -58,7 +58,7 @@ const feedTitle = computed(() => {
 const emptyHint = computed(() => {
   switch (feedType.value) {
     case 'follow':
-      return '你还没有形成关注流，先去发现更多同学。'
+      return '你还没有形成关注流，先去发现更多用户。'
     case 'topic':
       return '这个话题暂时还没有新内容。'
     case 'search':
