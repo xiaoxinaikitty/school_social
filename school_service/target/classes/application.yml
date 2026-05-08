@@ -25,9 +25,9 @@ app:
   mail:
     host: ${MAIL_HOST:smtp.qq.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:2071162373@qq.com}
-    password: ${MAIL_PASSWORD:klsroianqdgtdbjb}
-    from: ${MAIL_FROM:2071162373@qq.com}
+    username: ${MAIL_USERNAME:3268797894@qq.com}
+    password: ${MAIL_PASSWORD:jkenyytvxzhrcicj}
+    from: ${MAIL_FROM:3268797894@qq.com}
     use-ssl: ${MAIL_USE_SSL:true}
   auth:
     password-reset:
