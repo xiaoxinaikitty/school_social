@@ -1,5 +1,7 @@
 package com.school.social.mapper;
 
+import com.school.social.dto.interaction.CommentView;
+import com.school.social.dto.report.ReportTargetOption;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
@@ -21,15 +23,25 @@ public interface CommentMapper {
 
     int countByUserId(@Param("userId") Long userId);
 
-    List<Comment> selectByPostIdPaged(@Param("postId") Long postId,
-                                      @Param("parentId") Long parentId,
-                                      @Param("offset") int offset,
-                                      @Param("size") int size);
+    List<Long> selectIdsByPostId(@Param("postId") Long postId);
+
+    List<Long> selectIdsByParentId(@Param("parentId") Long parentId);
+
+    List<ReportTargetOption> searchReportTargetOptions(@Param("keyword") String keyword,
+                                                       @Param("offset") int offset,
+                                                       @Param("size") int size);
+
+    List<CommentView> selectByPostIdPaged(@Param("postId") Long postId,
+                                          @Param("parentId") Long parentId,
+                                          @Param("offset") int offset,
+                                          @Param("size") int size);
 
     int countByPostId(@Param("postId") Long postId,
                       @Param("parentId") Long parentId);
 
     int deleteByParentId(@Param("parentId") Long parentId);
+
+    int deleteByPostId(@Param("postId") Long postId);
 
     int countByParentId(@Param("parentId") Long parentId);
 

@@ -46,3 +46,14 @@ export const buildWsUrl = (path, params = {}) => {
   })
   return `${origin}${path}${query.toString() ? `?${query.toString()}` : ''}`
 }
+
+export const buildAssetUrl = (path) => {
+  if (!path) return ''
+  if (/^(https?:)?\/\//.test(path) || path.startsWith('data:') || path.startsWith('blob:')) {
+    return path
+  }
+  if (!API_BASE) {
+    return path
+  }
+  return `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`
+}

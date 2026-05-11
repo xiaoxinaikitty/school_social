@@ -36,6 +36,18 @@ public class UploadController {
         return saveFile(file, "avatars");
     }
 
+    @PostMapping("/upload/chat-image")
+    public ApiResponse<Map<String, Object>> uploadChatImage(@RequestParam("file") MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return ApiResponse.fail("文件不能为空");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return ApiResponse.fail("聊天消息仅支持图片文件");
+        }
+        return saveFile(file, "chat");
+    }
+
     private ApiResponse<Map<String, Object>> saveFile(MultipartFile file, String subDir) {
         if (file == null || file.isEmpty()) {
             return ApiResponse.fail("文件不能为空");

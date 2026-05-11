@@ -29,6 +29,7 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\post\PostCreateRequest.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\interaction\PostStatsResponse.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\FriendServiceImpl.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\interaction\CommentView.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\BehaviorLogService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\common\PasswordUtil.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\UserRoleServiceImpl.java
@@ -40,8 +41,10 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\AuditLogController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\mapper\LikeMapper.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\ReportService.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\ContentDeletionServiceImpl.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\UserTagController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\interaction\ShareRequest.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\report\ReportView.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\entity\Report.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\mapper\RecommendationLogMapper.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\UserTagServiceImpl.java
@@ -53,6 +56,7 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\mapper\PostTagMapper.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\controller\RoleController.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\friend\FriendCandidateView.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\report\ReportTargetOption.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\entity\ChatRoom.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\entity\RecommendationLog.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\config\AuthInterceptor.java
@@ -111,6 +115,7 @@ D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\socia
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\RetentionCount.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\EmailService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\RecommendPostStat.java
+D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\ContentDeletionService.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\admin\RecommendSceneStat.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\service\impl\PostTagServiceImpl.java
 D:\ChxySystem\School_Social_System\school_service\src\main\java\com\school\social\dto\friend\FriendRequestRespondRequest.java

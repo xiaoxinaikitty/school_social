@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { Flag, Promotion, Star, Position } from '@element-plus/icons-vue'
-import { apiFetch } from '../utils/api'
+import { apiFetch, buildAssetUrl } from '../utils/api'
 import { formatSnippet, getInitial, getPostTypeLabel, getStatusMeta, getVisibilityLabel } from '../utils/user'
 import UserShell from '../components/user/UserShell.vue'
 import PostCard from '../components/user/PostCard.vue'
@@ -53,9 +53,14 @@ const reportReasons = ['不实信息', '骚扰辱骂', '色情低俗', '违规�
 
 const isOwner = computed(() => Number(currentUser.value?.id) === Number(detail.value?.userId))
 const statusMeta = computed(() => getStatusMeta(detail.value?.status))
-const authorName = computed(() => detail.value?.username || `用户 ${detail.value?.userId ?? ''}`)
+const authorName = computed(() => detail.value?.username || '未命名用户')
 const authorInitial = computed(() => getInitial(authorName.value, '校'))
+const authorAvatarUrl = computed(() => buildAssetUrl(detail.value?.avatarUrl || ''))
 const mediaPreviewUrls = computed(() => (detail.value?.media || []).filter((item) => item.mediaType === 0).map((item) => item.url))
+
+const resolveAvatarUrl = (value) => buildAssetUrl(value || '')
+const getUserDisplayName = (user) => user?.username || '未命名用户'
+const getUserInitial = (user) => getInitial(getUserDisplayName(user), '校')
 
 const getReplyEmojiTarget = (parentId) => `reply-${parentId}`
 
@@ -466,7 +471,7 @@ onMounted(() => {
             <h1 class="campus-detail-article__title">{{ detail.title || '未命名内容' }}</h1>
             <div class="campus-author">
               <div class="campus-author__meta">
-                <el-avatar :size="52">{{ authorInitial }}</el-avatar>
+                <el-avatar :size="52" :src="authorAvatarUrl">{{ authorInitial }}</el-avatar>
                 <div>
                   <p class="campus-author__name">{{ authorName }}</p>
                   <p class="campus-muted">发布于 {{ detail.createdAt || '-' }}</p>
@@ -539,9 +544,12 @@ onMounted(() => {
               <div v-else-if="comments.length" class="campus-comment-list">
                 <div v-for="item in comments" :key="item.id" class="campus-comment">
                   <div class="campus-comment__top">
-                    <div>
-                      <strong>用户 {{ item.userId }}</strong>
-                      <p class="campus-muted" style="margin-top: 4px">{{ item.createdAt }}</p>
+                    <div class="campus-comment__author">
+                      <el-avatar :size="42" :src="resolveAvatarUrl(item.avatarUrl)">{{ getUserInitial(item) }}</el-avatar>
+                      <div>
+                        <strong>{{ getUserDisplayName(item) }}</strong>
+                        <p class="campus-muted" style="margin-top: 4px">{{ item.createdAt }}</p>
+                      </div>
                     </div>
                     <el-tag round effect="plain">主评论</el-tag>
                   </div>
@@ -559,8 +567,13 @@ onMounted(() => {
                     <el-skeleton v-if="replyMap[item.id]?.loading" animated :rows="2" />
                     <template v-else-if="replyMap[item.id]?.list?.length">
                       <div v-for="reply in replyMap[item.id].list" :key="reply.id" class="campus-reply-item">
-                        <strong>用户 {{ reply.userId }}</strong>
-                        <p class="campus-muted" style="margin-top: 4px">{{ reply.createdAt }}</p>
+                        <div class="campus-comment__author">
+                          <el-avatar :size="36" :src="resolveAvatarUrl(reply.avatarUrl)">{{ getUserInitial(reply) }}</el-avatar>
+                          <div>
+                            <strong>{{ getUserDisplayName(reply) }}</strong>
+                            <p class="campus-muted" style="margin-top: 4px">{{ reply.createdAt }}</p>
+                          </div>
+                        </div>
                         <p class="campus-comment__content" style="margin-bottom: 0">{{ reply.content }}</p>
                         <div class="campus-inline-actions" style="margin-top: 12px">
                           <el-button plain @click="toggleCommentLike(reply)">赞 {{ reply.likeCount ?? 0 }}</el-button>

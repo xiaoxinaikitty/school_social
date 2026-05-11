@@ -20,4 +20,10 @@ public interface LikeMapper {
     int deleteByUserAndTarget(@Param("userId") Long userId,
                               @Param("targetType") Integer targetType,
                               @Param("targetId") Long targetId);
+
+    int deleteByTarget(@Param("targetType") Integer targetType,
+                       @Param("targetId") Long targetId);
+
+    int deleteByTargetIds(@Param("targetType") Integer targetType,
+                          @Param("targetIds") List<Long> targetIds);
 }

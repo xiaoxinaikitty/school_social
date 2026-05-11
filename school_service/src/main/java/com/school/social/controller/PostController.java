@@ -12,12 +12,15 @@ import com.school.social.entity.UserRole;
 import com.school.social.entity.Post;
 import com.school.social.entity.PostMedia;
 import com.school.social.entity.PostTag;
+import com.school.social.entity.User;
 import com.school.social.mapper.PostMapper;
 import com.school.social.mapper.PostMediaMapper;
 import com.school.social.mapper.PostTagMapper;
 import com.school.social.mapper.RoleMapper;
 import com.school.social.mapper.TagMapper;
+import com.school.social.mapper.UserMapper;
 import com.school.social.mapper.UserRoleMapper;
+import com.school.social.service.ContentDeletionService;
 import com.school.social.service.RecommendationService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -61,7 +64,13 @@ public class PostController {
     private UserRoleMapper userRoleMapper;
 
     @Resource
+    private UserMapper userMapper;
+
+    @Resource
     private RecommendationService recommendationService;
+
+    @Resource
+    private ContentDeletionService contentDeletionService;
 
     @PostMapping
     public ApiResponse<PostDetailResponse> create(@Validated @RequestBody PostCreateRequest request,
@@ -150,9 +159,7 @@ public class PostController {
         if (userId == null || !userId.equals(existing.getUserId())) {
             return ApiResponse.fail("无权限操作");
         }
-        postTagMapper.deleteByPostId(id);
-        postMediaMapper.deleteByPostId(id);
-        postMapper.deleteById(id);
+        contentDeletionService.deletePost(id);
         return ApiResponse.success(null);
     }
 
@@ -346,9 +353,12 @@ public class PostController {
         if (post == null) {
             return null;
         }
+        User author = post.getUserId() == null ? null : userMapper.selectById(post.getUserId());
         PostDetailResponse resp = new PostDetailResponse();
         resp.setId(post.getId());
         resp.setUserId(post.getUserId());
+        resp.setUsername(author == null ? null : author.getUsername());
+        resp.setAvatarUrl(author == null ? null : author.getAvatarUrl());
         resp.setTitle(post.getTitle());
         resp.setContent(post.getContent());
         resp.setPostType(post.getPostType());

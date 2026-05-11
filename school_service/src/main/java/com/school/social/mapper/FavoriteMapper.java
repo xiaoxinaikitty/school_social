@@ -28,5 +28,7 @@ public interface FavoriteMapper {
     int deleteByUserAndPost(@Param("userId") Long userId,
                             @Param("postId") Long postId);
 
+    int deleteByPostId(@Param("postId") Long postId);
+
     int countByPostId(@Param("postId") Long postId);
 }

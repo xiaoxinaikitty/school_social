@@ -8,6 +8,8 @@ import java.util.List;
 public class PostDetailResponse {
     private Long id;
     private Long userId;
+    private String username;
+    private String avatarUrl;
     private String title;
     private String content;
     private Integer postType;
@@ -39,6 +41,22 @@ public class PostDetailResponse {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public String getTitle() {

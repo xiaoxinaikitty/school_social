@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { RefreshRight } from '@element-plus/icons-vue'
 import AdminShell from '../components/admin/AdminShell.vue'
 import { formatDateTime, requestData, shortText } from '../utils/admin'
@@ -16,6 +16,14 @@ const reportLoading = ref(false)
 const reportError = ref('')
 const reportResultMap = ref({})
 const reportDecisionMap = ref({})
+
+const reportTargetLabel = (type) => {
+  if (type === 0) return '内容'
+  if (type === 1) return '评论'
+  if (type === 2) return '用户'
+  if (type === 3) return '管理员反馈'
+  return '未知对象'
+}
 
 const loadReports = async (targetPage = 1) => {
   reportLoading.value = true
@@ -35,13 +43,24 @@ const loadReports = async (targetPage = 1) => {
   }
 }
 
-const handleReport = async (reportId) => {
+const handleReport = async (row) => {
+  const decision = reportDecisionMap.value[row.id] ?? 1
+  if (decision === 1 && (row.targetType === 0 || row.targetType === 1)) {
+    const targetLabel = row.targetType === 0 ? '校园内容' : '评论'
+    try {
+      await ElMessageBox.confirm(`当前处理结果为“属实”，系统会删除对应${targetLabel}。确定继续吗？`, '确认处理举报', {
+        type: 'warning',
+      })
+    } catch {
+      return
+    }
+  }
   try {
-    await requestData(router, `/api/reports/admin/${reportId}/handle`, {
+    await requestData(router, `/api/reports/admin/${row.id}/handle`, {
       method: 'PUT',
       body: JSON.stringify({
-        decision: reportDecisionMap.value[reportId] ?? 1,
-        result: reportResultMap.value[reportId] || '已处理',
+        decision,
+        result: reportResultMap.value[row.id] || '已处理',
       }),
     })
     ElMessage.success('举报已处理')
@@ -81,9 +100,9 @@ onMounted(() => {
         <div class="admin-section-heading">
           <div>
             <h3>举报工单列表</h3>
-            <p>展开记录后可直接写入结论、说明并完成处理。</p>
+            <p>举报与管理员反馈会统一展示；若判定内容或评论举报属实，系统会直接删除对应对象。</p>
           </div>
-          <el-tag round effect="plain">共 {{ reportTotal }} 条举报</el-tag>
+          <el-tag round effect="plain">共 {{ reportTotal }} 条工单</el-tag>
         </div>
 
         <el-table class="admin-compact-table" :data="reportList" v-loading="reportLoading">
@@ -94,8 +113,12 @@ onMounted(() => {
                   <div>
                     <span>举报对象</span>
                     <strong>
-                      {{ row.targetType === 0 ? '内容' : row.targetType === 1 ? '评论' : '用户' }} #{{ row.targetId }}
+                      {{ reportTargetLabel(row.targetType) }} / {{ row.targetName || `#${row.targetId}` }}
                     </strong>
+                  </div>
+                  <div>
+                    <span>提交用户</span>
+                    <strong>{{ row.reporterName || `用户 ${row.reporterId}` }}</strong>
                   </div>
                   <div>
                     <span>提交时间</span>
@@ -127,7 +150,7 @@ onMounted(() => {
                   <el-button
                     v-if="row.status !== 1"
                     type="primary"
-                    @click="handleReport(row.id)"
+                    @click="handleReport(row)"
                   >
                     标记为已处理
                   </el-button>
@@ -146,9 +169,14 @@ onMounted(() => {
               <div style="margin-top:4px;color:#64748b;">{{ shortText(row.detail, 72) }}</div>
             </template>
           </el-table-column>
-          <el-table-column label="举报对象" width="180">
+          <el-table-column label="提交用户" width="140">
             <template #default="{ row }">
-              {{ row.targetType === 0 ? '内容' : row.targetType === 1 ? '评论' : '用户' }} #{{ row.targetId }}
+              {{ row.reporterName || `用户 ${row.reporterId}` }}
+            </template>
+          </el-table-column>
+          <el-table-column label="举报对象" width="220">
+            <template #default="{ row }">
+              {{ reportTargetLabel(row.targetType) }} / {{ row.targetName || `#${row.targetId}` }}
             </template>
           </el-table-column>
           <el-table-column label="状态" width="110">
@@ -167,7 +195,7 @@ onMounted(() => {
                 :disabled="row.status === 1"
                 type="primary"
                 link
-                @click="handleReport(row.id)"
+                @click="handleReport(row)"
               >
                 处理
               </el-button>

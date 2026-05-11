@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { EditPen, Star, Tickets, User } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { apiFetch, apiUpload } from '../utils/api'
 import { formatSnippet, getGenderLabel, getInitial } from '../utils/user'
 import UserShell from '../components/user/UserShell.vue'
@@ -46,6 +47,8 @@ const profileSuccess = ref('')
 const loadingPosts = ref(false)
 const loadingFavorites = ref(false)
 const loadingComments = ref(false)
+const removingFavoriteId = ref(null)
+const removingCommentId = ref(null)
 const feedError = ref('')
 const avatarInputRef = ref(null)
 const uploadingAvatar = ref(false)
@@ -453,6 +456,60 @@ const deletePost = async (postId) => {
   }
 }
 
+const removeFavorite = async (postId) => {
+  if (!postId || removingFavoriteId.value) return
+  removingFavoriteId.value = postId
+  feedError.value = ''
+  try {
+    const res = await apiFetch(`/api/favorites/${postId}`, { method: 'DELETE' })
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      feedError.value = data.message || '取消收藏失败。'
+      return
+    }
+    ElMessage.success('已取消收藏。')
+    const nextTotal = Math.max((favoritesData.value.total || 0) - 1, 0)
+    const maxPage = Math.max(Math.ceil(nextTotal / pageSize), 1)
+    const targetPage = Math.min(favoritesPage.value || 1, maxPage)
+    await loadFavorites(targetPage)
+  } catch {
+    feedError.value = '网络错误，无法取消收藏。'
+  } finally {
+    removingFavoriteId.value = null
+  }
+}
+
+const removeComment = async (commentId) => {
+  if (!commentId || removingCommentId.value) return
+  try {
+    await ElMessageBox.confirm('确定删除这条评论吗？删除后无法恢复。', '删除评论', { type: 'warning' })
+  } catch {
+    return
+  }
+
+  removingCommentId.value = commentId
+  feedError.value = ''
+  try {
+    const res = await apiFetch(`/api/comments/${commentId}`, { method: 'DELETE' })
+    if (authGuard(res)) return
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      feedError.value = data.message || '删除评论失败。'
+      return
+    }
+    ElMessage.success('评论已删除。')
+    const nextTotal = Math.max((commentsData.value.total || 0) - 1, 0)
+    const maxPage = Math.max(Math.ceil(nextTotal / pageSize), 1)
+    const targetPage = Math.min(commentsPage.value || 1, maxPage)
+    await loadComments(targetPage)
+  } catch {
+    feedError.value = '网络错误，无法删除评论。'
+  } finally {
+    removingCommentId.value = null
+  }
+}
+
 onMounted(() => {
   try {
     const savedUser = localStorage.getItem('auth_user')
@@ -584,7 +641,13 @@ onMounted(() => {
             <el-alert v-if="feedError" :title="feedError" type="error" show-icon style="margin-bottom: 14px" />
             <div v-if="loadingFavorites" class="campus-card-grid"><el-skeleton v-for="index in 2" :key="index" animated :rows="4" /></div>
             <div v-else-if="favoritesData.list?.length" class="campus-post-grid">
-              <PostCard v-for="post in favoritesData.list" :key="post.id" :post="post" badge="我的收藏" />
+              <PostCard v-for="post in favoritesData.list" :key="post.id" :post="post" badge="我的收藏">
+                <template #actions="{ post: item }">
+                  <el-button type="danger" plain :loading="removingFavoriteId === item.id" @click="removeFavorite(item.id)">
+                    取消收藏
+                  </el-button>
+                </template>
+              </PostCard>
             </div>
             <el-empty v-else description="还没有收藏内容。" />
             <div v-if="favoritesData.total > pageSize" style="margin-top: 20px">
@@ -600,6 +663,12 @@ onMounted(() => {
                 <p class="campus-side-item__title">评论记录</p>
                 <p class="campus-side-item__desc">{{ formatSnippet(comment.content, 140) }}</p>
                 <p class="campus-muted" style="margin-top: 10px">{{ comment.createdAt || '-' }}</p>
+                <div class="campus-inline-actions" style="margin-top: 12px">
+                  <el-button plain @click="router.push(`/posts/${comment.postId}`)">查看内容</el-button>
+                  <el-button type="danger" plain :loading="removingCommentId === comment.id" @click="removeComment(comment.id)">
+                    删除评论
+                  </el-button>
+                </div>
               </div>
             </div>
             <el-empty v-else description="暂无评论记录。" />

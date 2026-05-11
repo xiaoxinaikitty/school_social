@@ -20,6 +20,7 @@ com\school\social\entity\Post.class
 com\school\social\service\AuditLogService.class
 com\school\social\service\impl\LikeServiceImpl.class
 com\school\social\service\impl\RoleServiceImpl.class
+com\school\social\service\ContentDeletionService.class
 com\school\social\entity\Favorite.class
 com\school\social\entity\Tag.class
 com\school\social\mapper\ChatMessageMapper.class
@@ -34,6 +35,7 @@ com\school\social\dto\chat\ChatSocketMessageRequest.class
 com\school\social\service\impl\UserServiceImpl.class
 com\school\social\dto\friend\FriendCandidateView.class
 com\school\social\service\impl\FriendServiceImpl.class
+com\school\social\dto\report\ReportView.class
 com\school\social\dto\auth\ForgotPasswordVerifyCodeRequest.class
 com\school\social\dto\admin\RecommendOverview.class
 com\school\social\controller\PostMediaController.class
@@ -77,10 +79,12 @@ com\school\social\service\AnnouncementService.class
 com\school\social\service\impl\PostMediaServiceImpl.class
 com\school\social\entity\BehaviorLog.class
 com\school\social\mapper\PostTagMapper.class
+com\school\social\dto\report\ReportTargetOption.class
 com\school\social\service\impl\UserRoleServiceImpl.class
 com\school\social\mapper\CommentMapper.class
 com\school\social\service\ReportService.class
 com\school\social\service\FollowService.class
+com\school\social\dto\interaction\CommentView.class
 com\school\social\service\impl\TagServiceImpl.class
 com\school\social\entity\Like.class
 com\school\social\service\UserRoleService.class
@@ -97,6 +101,7 @@ com\school\social\common\ApiResponse.class
 com\school\social\controller\UserController.class
 com\school\social\dto\chat\ChatRoomCreateRequest.class
 com\school\social\service\PostService.class
+com\school\social\service\impl\ContentDeletionServiceImpl.class
 com\school\social\service\impl\RecommendationServiceImpl$PostScore.class
 com\school\social\controller\PostController.class
 com\school\social\entity\PostMedia.class

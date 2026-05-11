@@ -10,12 +10,14 @@ import com.school.social.entity.Notification;
 import com.school.social.entity.Post;
 import com.school.social.entity.Role;
 import com.school.social.entity.UserRole;
+import com.school.social.entity.User;
 import com.school.social.mapper.AuditLogMapper;
 import com.school.social.mapper.NotificationMapper;
 import com.school.social.mapper.PostMediaMapper;
 import com.school.social.mapper.PostMapper;
 import com.school.social.mapper.PostTagMapper;
 import com.school.social.mapper.RoleMapper;
+import com.school.social.mapper.UserMapper;
 import com.school.social.mapper.UserRoleMapper;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,7 +39,7 @@ public class AdminPostController {
     private static final int STATUS_APPROVED = 1;
     private static final int STATUS_REJECTED = 2;
     private static final int STATUS_DRAFT = 3;
-    private static final int NOTIFY_AUDIT = 4;
+    private static final int NOTIFY_AUDIT = 6;
     private static final int REF_POST = 0;
 
     @Resource
@@ -60,6 +62,9 @@ public class AdminPostController {
 
     @Resource
     private PostTagMapper postTagMapper;
+
+    @Resource
+    private UserMapper userMapper;
 
     @GetMapping
     public ApiResponse<PageResponse<Post>> list(@RequestParam(defaultValue = "1") int page,
@@ -197,9 +202,12 @@ public class AdminPostController {
     }
 
     private PostDetailResponse buildDetail(Post post) {
+        User author = post.getUserId() == null ? null : userMapper.selectById(post.getUserId());
         PostDetailResponse resp = new PostDetailResponse();
         resp.setId(post.getId());
         resp.setUserId(post.getUserId());
+        resp.setUsername(author == null ? null : author.getUsername());
+        resp.setAvatarUrl(author == null ? null : author.getAvatarUrl());
         resp.setTitle(post.getTitle());
         resp.setContent(post.getContent());
         resp.setPostType(post.getPostType());

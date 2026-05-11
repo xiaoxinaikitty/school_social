@@ -50,7 +50,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             return;
         }
         try {
-            ChatMessageView saved = chatService.saveMessage(userId, roomId, request == null ? null : request.getContent());
+            ChatMessageView saved = chatService.saveMessage(
+                    userId,
+                    roomId,
+                    request == null ? null : request.getContent(),
+                    request == null ? null : request.getMessageType()
+            );
             broadcast(roomId, objectMapper.writeValueAsString(ApiResponse.success(saved)));
         } catch (IllegalArgumentException ex) {
             sendError(session, ex.getMessage());

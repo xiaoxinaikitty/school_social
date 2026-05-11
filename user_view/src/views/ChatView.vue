@@ -1,9 +1,12 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch, buildWsUrl } from '../utils/api'
+import { apiFetch, apiUpload, buildAssetUrl, buildWsUrl } from '../utils/api'
 
 const router = useRouter()
+const MESSAGE_TYPE_TEXT = 0
+const MESSAGE_TYPE_IMAGE = 1
+const emojiList = ['😀', '😁', '😂', '😊', '😍', '🥳', '😎', '🤔', '😭', '😡', '👍', '👏', '🎉', '❤️', '🔥', '🌟']
 
 const currentUser = ref(null)
 const rooms = ref([])
@@ -34,10 +37,13 @@ const sendingFriendRequestId = ref(null)
 const friendSearchSubmitted = ref(false)
 
 const messageDraft = ref('')
+const activeEmojiPicker = ref(false)
+const uploadingImage = ref(false)
 const actionError = ref('')
 const actionSuccess = ref('')
 const wsConnected = ref(false)
 const messageListRef = ref(null)
+const chatImageInputRef = ref(null)
 
 let socket = null
 
@@ -72,6 +78,8 @@ const formatTime = (value) => {
   return String(value).replace('T', ' ')
 }
 
+const resolveAssetUrl = (value) => buildAssetUrl(value)
+
 const roomInitial = (room) => {
   if (!room?.name) return activeMode.value === 'friend' ? '友' : '群'
   return room.name.slice(0, 1)
@@ -83,6 +91,9 @@ const messageInitial = (message) => {
 }
 
 const isMine = (message) => Number(message?.senderId) === Number(currentUser.value?.id)
+const isImageMessage = (message) => Number(message?.messageType) === MESSAGE_TYPE_IMAGE
+const messageImageUrl = (message) => resolveAssetUrl(message?.content || '')
+const messagePreviewText = (message) => (isImageMessage(message) ? '[图片]' : (message?.content || ''))
 
 const candidateActionLabel = (item) => {
   if (item.relationStatus === 'friend') return item.directRoomId ? '发消息' : '已是好友'
@@ -461,20 +472,96 @@ const handleCandidateAction = async (candidate) => {
   await sendFriendRequest(candidate)
 }
 
-const sendMessage = () => {
+const sendSocketMessage = (content, messageType = MESSAGE_TYPE_TEXT) => {
   actionError.value = ''
   actionSuccess.value = ''
+  if (!content) {
+    actionError.value = messageType === MESSAGE_TYPE_IMAGE ? '图片地址不能为空。' : '请输入要发送的消息。'
+    return false
+  }
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    actionError.value = '实时连接未建立，请稍后重试。'
+    return false
+  }
+  socket.send(JSON.stringify({ content, messageType }))
+  return true
+}
+
+const sendMessage = () => {
   const content = messageDraft.value.trim()
   if (!content) {
     actionError.value = '请输入要发送的消息。'
     return
   }
-  if (!socket || socket.readyState !== WebSocket.OPEN) {
-    actionError.value = '实时连接未建立，请稍后重试。'
+  if (sendSocketMessage(content, MESSAGE_TYPE_TEXT)) {
+    messageDraft.value = ''
+    activeEmojiPicker.value = false
+  }
+}
+
+const insertEmoji = (emoji) => {
+  if (!emoji) return
+  messageDraft.value = `${messageDraft.value || ''}${emoji}`
+}
+
+const triggerImageUpload = () => {
+  actionError.value = ''
+  actionSuccess.value = ''
+  if (chatImageInputRef.value) {
+    chatImageInputRef.value.click()
+  }
+}
+
+const handleChatImageChange = async (event) => {
+  const [file] = Array.from(event.target?.files || [])
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    actionError.value = '聊天仅支持发送图片文件。'
+    if (event.target) {
+      event.target.value = ''
+    }
     return
   }
-  socket.send(JSON.stringify({ content }))
-  messageDraft.value = ''
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    actionError.value = '实时连接未建立，请稍后重试。'
+    if (event.target) {
+      event.target.value = ''
+    }
+    return
+  }
+
+  uploadingImage.value = true
+  actionError.value = ''
+  actionSuccess.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await apiUpload('/api/upload/chat-image', formData)
+    if (res.status === 401) {
+      router.push('/login')
+      return
+    }
+    const data = await res.json()
+    if (!res.ok || data.code !== 0) {
+      actionError.value = data.message || '图片上传失败。'
+      return
+    }
+    const imageUrl = data.data?.url || ''
+    if (!imageUrl) {
+      actionError.value = '图片上传结果无效。'
+      return
+    }
+    if (sendSocketMessage(imageUrl, MESSAGE_TYPE_IMAGE)) {
+      actionSuccess.value = '图片已发送。'
+    }
+  } catch {
+    actionError.value = '网络错误，无法上传图片。'
+  } finally {
+    uploadingImage.value = false
+    if (event.target) {
+      event.target.value = ''
+    }
+  }
 }
 
 onMounted(async () => {
@@ -718,7 +805,11 @@ onBeforeUnmount(() => {
                     <strong>{{ message.senderName || `用户 ${message.senderId}` }}</strong>
                     <span>{{ formatTime(message.createdAt) }}</span>
                   </div>
-                  <p>{{ message.content }}</p>
+                  <div v-if="isImageMessage(message)" class="chat-image-message">
+                    <img class="chat-image-message__img" :src="messageImageUrl(message)" :alt="messagePreviewText(message)" />
+                    <a class="chat-image-message__link" :href="messageImageUrl(message)" target="_blank" rel="noreferrer">查看原图</a>
+                  </div>
+                  <p v-else>{{ message.content }}</p>
                 </div>
               </div>
             </div>
@@ -733,8 +824,28 @@ onBeforeUnmount(() => {
                   :placeholder="selectedRoomIsDirect ? '输入你想对好友说的话，发送后会实时同步。' : '输入你想发送的内容，按发送即可实时同步到群里。'"
                 ></textarea>
               </label>
+              <div class="emoji-toolbar">
+                <button class="ghost-btn" type="button" @click="activeEmojiPicker = !activeEmojiPicker">
+                  {{ activeEmojiPicker ? '收起表情' : '发送表情' }}
+                </button>
+                <button class="ghost-btn" type="button" :disabled="uploadingImage" @click="triggerImageUpload">
+                  {{ uploadingImage ? '上传中...' : '发送图片' }}
+                </button>
+                <input ref="chatImageInputRef" class="file-input" type="file" accept="image/*" @change="handleChatImageChange" />
+              </div>
+              <div v-if="activeEmojiPicker" class="emoji-picker">
+                <button
+                  v-for="emoji in emojiList"
+                  :key="`chat-${emoji}`"
+                  class="emoji-btn"
+                  type="button"
+                  @click="insertEmoji(emoji)"
+                >
+                  {{ emoji }}
+                </button>
+              </div>
               <div class="chat-input-actions">
-                <span class="field-tip">支持 500 字以内文本消息。</span>
+                <span class="field-tip">支持 500 字以内文本、表情和图片消息。</span>
                 <button class="primary-btn" type="submit">发送消息</button>
               </div>
             </form>

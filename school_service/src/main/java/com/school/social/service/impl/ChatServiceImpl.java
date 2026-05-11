@@ -27,6 +27,7 @@ public class ChatServiceImpl implements ChatService {
     private static final int MEMBER_ROLE_NORMAL = 0;
     private static final int MEMBER_ROLE_OWNER = 2;
     private static final int MESSAGE_TYPE_TEXT = 0;
+    private static final int MESSAGE_TYPE_IMAGE = 1;
     private static final int MESSAGE_STATUS_NORMAL = 0;
     private static final int MAX_MESSAGE_LENGTH = 500;
 
@@ -143,14 +144,22 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatMessageView saveMessage(Long userId, Long roomId, String content) {
+    public ChatMessageView saveMessage(Long userId, Long roomId, String content, Integer messageType) {
         assertMember(userId, roomId);
         String safeContent = content == null ? "" : content.trim();
-        if (safeContent.isEmpty()) {
-            throw new IllegalArgumentException("消息内容不能为空");
+        int safeMessageType = messageType == null ? MESSAGE_TYPE_TEXT : messageType;
+        if (safeMessageType != MESSAGE_TYPE_TEXT && safeMessageType != MESSAGE_TYPE_IMAGE) {
+            throw new IllegalArgumentException("消息类型不支持");
         }
-        if (safeContent.length() > MAX_MESSAGE_LENGTH) {
-            throw new IllegalArgumentException("消息长度不能超过 500 个字符");
+        if (safeMessageType == MESSAGE_TYPE_TEXT) {
+            if (safeContent.isEmpty()) {
+                throw new IllegalArgumentException("消息内容不能为空");
+            }
+            if (safeContent.length() > MAX_MESSAGE_LENGTH) {
+                throw new IllegalArgumentException("消息长度不能超过 500 个字符");
+            }
+        } else if (safeContent.isEmpty()) {
+            throw new IllegalArgumentException("图片消息不能为空");
         }
         ChatRoomMember member = chatRoomMemberMapper.selectByRoomIdAndUserId(roomId, userId);
         if (member != null && member.getMuteUntil() != null && member.getMuteUntil().isAfter(LocalDateTime.now())) {
@@ -160,7 +169,7 @@ public class ChatServiceImpl implements ChatService {
         message.setRoomId(roomId);
         message.setSenderId(userId);
         message.setContent(safeContent);
-        message.setMessageType(MESSAGE_TYPE_TEXT);
+        message.setMessageType(safeMessageType);
         message.setStatus(MESSAGE_STATUS_NORMAL);
         message.setCreatedAt(LocalDateTime.now());
         chatMessageMapper.insert(message);

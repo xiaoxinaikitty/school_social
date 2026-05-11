@@ -3,6 +3,7 @@ package com.school.social.controller;
 import com.school.social.common.ApiResponse;
 import com.school.social.common.PageResponse;
 import com.school.social.dto.interaction.CommentCreateRequest;
+import com.school.social.dto.interaction.CommentView;
 import com.school.social.entity.Comment;
 import com.school.social.entity.Notification;
 import com.school.social.entity.Post;
@@ -13,6 +14,7 @@ import com.school.social.mapper.NotificationMapper;
 import com.school.social.mapper.PostMapper;
 import com.school.social.mapper.RoleMapper;
 import com.school.social.mapper.UserRoleMapper;
+import com.school.social.service.ContentDeletionService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,6 +51,9 @@ public class CommentController {
 
     @Resource
     private UserRoleMapper userRoleMapper;
+
+    @Resource
+    private ContentDeletionService contentDeletionService;
 
     @PostMapping
     public ApiResponse<Comment> create(@RequestBody CommentCreateRequest request,
@@ -94,11 +99,11 @@ public class CommentController {
     }
 
     @GetMapping
-    public ApiResponse<PageResponse<Comment>> list(@RequestParam Long postId,
-                                                   @RequestParam(required = false) Long parentId,
-                                                   @RequestParam(defaultValue = "1") int page,
-                                                   @RequestParam(defaultValue = "10") int size,
-                                                   HttpServletRequest httpRequest) {
+    public ApiResponse<PageResponse<CommentView>> list(@RequestParam Long postId,
+                                                       @RequestParam(required = false) Long parentId,
+                                                       @RequestParam(defaultValue = "1") int page,
+                                                       @RequestParam(defaultValue = "10") int size,
+                                                       HttpServletRequest httpRequest) {
         Post post = postMapper.selectById(postId);
         if (post == null) {
             return ApiResponse.fail("内容不存在");
@@ -112,7 +117,7 @@ public class CommentController {
         int safePage = Math.max(page, 1);
         int safeSize = Math.min(Math.max(size, 1), 50);
         int offset = (safePage - 1) * safeSize;
-        List<Comment> list = commentMapper.selectByPostIdPaged(postId, parentId, offset, safeSize);
+        List<CommentView> list = commentMapper.selectByPostIdPaged(postId, parentId, offset, safeSize);
         long total = commentMapper.countByPostId(postId, parentId);
         return ApiResponse.success(new PageResponse<>(safePage, safeSize, total, list));
     }
@@ -131,16 +136,7 @@ public class CommentController {
         if (!userId.equals(existing.getUserId())) {
             return ApiResponse.fail("无权限操作");
         }
-        int removed = 1;
-        if (existing.getParentId() == null) {
-            int replyCount = commentMapper.countByParentId(id);
-            if (replyCount > 0) {
-                commentMapper.deleteByParentId(id);
-                removed += replyCount;
-            }
-        }
-        commentMapper.deleteById(id);
-        postMapper.decreaseCommentCountBy(existing.getPostId(), removed);
+        contentDeletionService.deleteComment(id);
         return ApiResponse.success(null);
     }
 

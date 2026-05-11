@@ -69,7 +69,10 @@
                                     AND msg.sender_id != #{userId}
                                     AND (m.last_read_message_id IS NULL OR msg.id &gt; m.last_read_message_id)), 0)
                END AS unread_count,
-               (SELECT msg.content
+               (SELECT CASE
+                           WHEN msg.message_type = 1 THEN '[图片]'
+                           ELSE msg.content
+                       END
                 FROM chat_message msg
                 WHERE msg.room_id = r.id AND msg.status = 0
                 ORDER BY msg.id DESC

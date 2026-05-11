@@ -22,5 +22,5 @@ public interface ChatService {
 
     boolean isMember(Long userId, Long roomId);
 
-    ChatMessageView saveMessage(Long userId, Long roomId, String content);
+    ChatMessageView saveMessage(Long userId, Long roomId, String content, Integer messageType);
 }
